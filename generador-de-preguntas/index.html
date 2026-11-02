@@ -1,0 +1,251 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Generador de Preguntas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kit de Producción — shared system. Layout: one centered work column, tool panels in a responsive two-up grid, results set in mono */
+:root{
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#191a1c; --muted:#5f6268; --line:#dcdad5; --field:#f8f7f4;
+  --accent:#0b7a75; --accent-ink:#075b57; --on-accent:#ffffff; --soft:#e3f1ef;
+  --good:#1d7f45; --warn:#a85a00; --bad:#b42318;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --ui:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:22px 48px}
+.app{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,34px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:64ch}
+h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:820px){.grid,.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical}
+textarea.mono{font-family:var(--mono);font-size:13px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:17px;height:17px}
+input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px;cursor:pointer}
+input[type=file]{font:inherit;font-size:13px;max-width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:10px 16px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{font-size:13px;padding:6px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.big{font-family:var(--mono);font-size:clamp(28px,5vw,40px);font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv div{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.preview{background:var(--field);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.preview canvas,.preview img{display:block;width:100%;height:auto;max-width:100%}
+.checker{background-color:#c9c9c9;background-image:linear-gradient(45deg,#a9a9a9 25%,transparent 25%),linear-gradient(-45deg,#a9a9a9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#a9a9a9 75%),linear-gradient(-45deg,transparent 75%,#a9a9a9 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.fb{display:flex;flex-direction:column;gap:10px}
+.fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.stage{display:flex;flex-direction:column;gap:2px;padding-bottom:6px}
+.stage h3{margin:8px 0 2px;font-family:var(--display);font-weight:600;font-size:16px;color:var(--accent-ink)}
+.q{display:flex;align-items:flex-start;gap:10px;padding:7px 6px;border-radius:8px;cursor:pointer;font-size:15px}
+.q:hover{background:var(--field)}
+.q input{margin-top:2px;flex:none}
+.q span:first-of-type{flex:1;min-width:0}
+.q input:not(:checked)+span{color:var(--muted);text-decoration:line-through}
+.x{flex:none;width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--field);color:var(--muted);cursor:pointer}
+.tips{background:var(--soft);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tips p{margin:0;font-size:14px}
+</style>
+<div class="app">
+<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Generador de Preguntas</h1><p class="sub">Escribe el tema, elige a quién entrevistas y el formato, y obtén un guion de preguntas ordenado de lo fácil a lo profundo.</p></header>
+
+<div class="grid wide">
+  <div class="card">
+    <h2>Entrevista</h2>
+    <label class="f">Tema <small>escríbelo con artículo: «el programa de becas»</small><input type="text" id="tema" value="el simulacro de sismo"></label>
+    <label class="f">A quién entrevistas<div class="seg" id="inv">
+      <button type="button" data-v="funcionario">Funcionario</button><button type="button" data-v="ciudadano">Ciudadano</button>
+      <button type="button" data-v="experto">Especialista</button><button type="button" data-v="testigo">Testigo</button></div></label>
+    <label class="f">Formato<div class="seg" id="fmt">
+      <button type="button" data-v="fondo">A fondo</button><button type="button" data-v="testimonio">Testimonio</button>
+      <button type="button" data-v="voxpop">Vox pop</button><button type="button" data-v="pingpong">Ping pong</button></div></label>
+    <label class="f" id="arqF" hidden>Tipo de testimonio<div class="seg" id="arq">
+      <button type="button" data-v="duda">El que dudaba</button><button type="button" data-v="cambia">El que cambió</button><button type="button" data-v="agradece">El que agradece</button></div></label>
+    <div class="tips" id="tips"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>Guion de preguntas</h2><span class="tag" id="cnt"></span></div>
+    <div id="list"></div>
+    <div class="row"><input type="text" id="own" placeholder="Agrega una pregunta tuya" style="flex:1 1 220px"><select id="ownSt" style="flex:0 1 170px" aria-label="Etapa"></select><button class="btn ghost sm" type="button" id="addOwn">Agregar</button></div>
+    <div class="row">
+      <button class="btn" type="button" id="copy">Copiar las marcadas</button>
+      <button class="btn ghost" type="button" id="ai" hidden>Más ideas con Claude</button>
+      <span class="note" id="aiMsg" aria-live="polite"></span>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+(function(){
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ let el=$(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function seg(el, v, cb){ const set=val=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===String(val)))); set(v); el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); cb(b.dataset.v); }); return set; }
+let _dl=null; function dl(){ if(!_dl) _dl=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null); return _dl; }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Copiado"); return true; }catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); toast(ok?"Copiado":"Selecciona el texto y cópialo a mano"); return ok; } }
+function fallbackBox(){ let fb=$("#fallback"); if(!fb){ fb=document.createElement("div"); fb.id="fallback"; fb.className="card fb"; $(".app").appendChild(fb); } fb.innerHTML=""; fb.hidden=false; return fb; }
+async function showFallback(name, data){
+  const fb=fallbackBox(); const h=document.createElement("h2"); h.textContent="Guardar a mano"; fb.appendChild(h);
+  const p=document.createElement("p"); p.className="note"; fb.appendChild(p);
+  if(data instanceof Blob && data.type.startsWith("image/")){ p.textContent="Aquí no se puede descargar directo. Mantén presionada la imagen (o clic derecho › Guardar imagen)."; const img=document.createElement("img"); img.alt=name; img.src=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(data);}); fb.appendChild(img); }
+  else if(typeof data==="string"){ p.textContent="Aquí no se puede descargar directo. Copia el contenido:"; const ta=document.createElement("textarea"); ta.className="mono"; ta.value=data; ta.readOnly=true; fb.appendChild(ta); const b=document.createElement("button"); b.className="btn ghost sm"; b.type="button"; b.textContent="Copiar"; b.onclick=()=>copyText(data); fb.appendChild(b); }
+  else { p.textContent="Aquí no se puede descargar este archivo. Abre la página dentro de claude.ai para guardarlo."; }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function saveFile(name, data){
+  const d=await dl();
+  if(!d){ await showFallback(name, data); return false; }
+  try{ await d.save({filename:name, data}); toast("Listo: "+name); return true; }
+  catch(e){ const c=e&&e.code; if(c==="declined"){ toast("Descarga cancelada"); return false; } if(c==="rate_limited"){ toast("Ya hay una descarga pendiente"); return false; } await showFallback(name, data); return false; }
+}
+function canvasBlob(c, type, q){ return new Promise(r=>c.toBlob(r, type||"image/png", q)); }
+function slug(t){ return (t||"archivo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"archivo"; }
+function readImage(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+function sampleImage(w,h,seed){
+  // Escena de ejemplo generada (no es una foto real)
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); let s=seed||5; const r=()=>{ s=(s*16807)%2147483647; return s/2147483647; };
+  let g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#3d6fb6"); g.addColorStop(.55,"#f2b27a"); g.addColorStop(1,"#5a3b2e"); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.fillStyle="rgba(255,236,200,.95)"; x.beginPath(); x.arc(w*.7,h*.42,h*.09,0,7); x.fill();
+  for(let i=0;i<9;i++){ x.fillStyle=`rgba(${30+i*6},${34+i*5},${48+i*4},.92)`; const bw=w*(.07+r()*.08), bh=h*(.2+r()*.35); x.fillRect(i*w*.115, h*.62-bh, bw, bh+2); }
+  x.fillStyle="#2d2a26"; x.fillRect(0,h*.62,w,h*.38);
+  x.fillStyle="#d9d2c4"; for(let i=0;i<6;i++){ x.fillRect(w*(.08+i*.16), h*.8, w*.08, h*.012); }
+  x.fillStyle="#1b1a18"; x.beginPath(); x.arc(w*.36,h*.52,h*.05,0,7); x.fill(); x.fillRect(w*.33,h*.56,w*.06,h*.2);
+  return c;
+}
+
+
+const STAGES={fondo:["Romper el hielo","Contexto","Experiencia","Profundidad","Cierre"],testimonio:["Presentación","Antes","El cambio","Después","Mensaje"],voxpop:["Preguntas rápidas"],pingpong:["Ping pong"]};
+const BANK={
+ fondo:{"Romper el hielo":["¿Cómo te presentas? Tu nombre y a qué te dedicas.","¿Desde cuándo estás relacionado con {t}?","¿Cómo es un día normal en tu trabajo?"],
+  "Contexto":["En palabras sencillas, ¿qué es {t}?","¿Por qué surge {t}? ¿Qué problema busca resolver?","¿A quién está dirigido {t}?","¿Qué ha cambiado desde que empezó {t}?"],
+  "Experiencia":["¿Recuerdas la primera vez que te involucraste con {t}?","Cuéntame una historia concreta que resuma lo que hace {t}.","¿Qué ha sido lo más difícil?","¿Qué es lo que más te ha sorprendido?"],
+  "Profundidad":["¿Por qué es importante para ti, en lo personal?","¿Qué le dirías a alguien que duda de {t}?","Si {t} no existiera, ¿qué pasaría?","¿Qué te gustaría que la gente entendiera y todavía no entiende?"],
+  "Cierre":["¿Qué sigue para {t}?","En una frase, ¿qué mensaje le darías a quien nos ve?","¿Hay algo que no te pregunté y quieras decir?"]},
+ testimonio:{"Presentación":["¿Cómo te llamas y de dónde eres?","¿A qué te dedicas y con quién vives?"],
+  "Antes":["¿Cómo era tu situación antes de {t}?","¿Qué era lo más difícil en ese momento?"],
+  "El cambio":["¿Cómo te enteraste de {t}?","¿Qué pasó la primera vez que participaste?","¿En qué momento sentiste que algo cambiaba?"],
+  "Después":["¿Cómo es tu vida ahora?","¿Qué puedes hacer hoy que antes no podías?","¿Qué notan las personas cercanas a ti?"],
+  "Mensaje":["¿Qué le dirías a alguien que está como tú estabas antes?","En una frase, ¿qué significa {t} para ti?"]},
+ voxpop:{"Preguntas rápidas":["¿Has oído hablar de {t}?","En una palabra, ¿qué te viene a la mente con {t}?","¿Qué sabes de {t}?","¿Te ha tocado vivir {t} de cerca?","Del 1 al 10, ¿qué tan preparado te sientes para {t}?","¿Por qué crees que es importante {t}?","¿Qué consejo le darías a otras personas sobre {t}?","¿Qué le pedirías a las autoridades sobre {t}?"]},
+ pingpong:{"Ping pong":["Tu nombre y una palabra que te describa","Café o té","Mañana o noche","Un lugar favorito de tu ciudad","Una palabra para {t}","Si {t} fuera un color","Una película o un libro","Una persona que admiras","Lo mejor de tu trabajo","Lo más difícil de tu trabajo","Una meta para este año","Un consejo en tres palabras","Una canción para trabajar","Termina la frase: {t} es…"]}
+};
+const GUEST={
+ funcionario:{l:"una persona servidora pública",x:{"Contexto":["¿Cuáles son los requisitos y cómo se solicita {t}?"],"Experiencia":["¿Qué resultados concretos pueden compartir hasta ahora?"],"Cierre":["¿Dónde puede la gente informarse o hacer el trámite?"]},
+  tip:"Pide ejemplos y cifras concretas, y que no lea notas: la respuesta leída se nota en cámara."},
+ ciudadano:{l:"una persona beneficiaria o ciudadana",x:{"Romper el hielo":["¿De qué colonia o comunidad eres?"],"Contexto":["¿Cómo te enteraste de {t}?"],"Experiencia":["¿Cómo era tu situación antes?","¿Qué cambió en tu vida o en tu familia?"]},
+  tip:"Empieza con preguntas fáciles y personales para que se relaje. Conversa unos minutos antes de grabar."},
+ experto:{l:"una persona especialista",x:{"Contexto":["¿Cuál es el error más común que la gente comete sobre {t}?"],"Experiencia":["¿Qué dicen los datos sobre {t}?"],"Cierre":["¿Qué recomendación práctica darías hoy mismo?"]},
+  tip:"Pídele que lo explique como a un vecino, sin tecnicismos. Si usa una sigla, que la diga completa."},
+ testigo:{l:"una persona testigo",x:{"Experiencia":["¿Dónde estabas y qué estabas haciendo?","¿Qué fue lo primero que viste o escuchaste?","¿Cómo reaccionó la gente a tu alrededor?"]},
+  tip:"No sugieras respuestas. Pide detalles de lo que vio y escuchó, en orden."}
+};
+const ARQ={duda:{"Antes":["¿Qué pensaste la primera vez que escuchaste de {t}?","¿Qué te hacía desconfiar?"],"El cambio":["¿Qué te convenció de intentarlo?"]},
+ cambia:{"El cambio":["Describe el momento exacto en que todo cambió.","¿Qué decisión tomaste que lo hizo posible?"],"Después":["¿Qué diría hoy tu yo de antes?"]},
+ agradece:{"Después":["¿A quién le agradeces y por qué?"],"Mensaje":["Si esa persona te estuviera viendo, ¿qué le dirías?"]}};
+const FDESC={fondo:"una entrevista a fondo",testimonio:"un testimonio en video",voxpop:"un vox pop en la calle (respuestas de pocos segundos)",pingpong:"un ping pong de preguntas rápidas que se responden con una o dos palabras"};
+let st=store.get("pre-v1",{tema:"el simulacro de sismo",inv:"funcionario",fmt:"fondo",arq:"duda",extra:[],off:{}});
+$("#tema").value=st.tema;
+const save=()=>store.set("pre-v1",st);
+const fill=q=>q.replace(/\{t\}/g, st.tema.trim()||"este tema");
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+seg($("#inv"),st.inv,v=>{st.inv=v;save();render();});
+seg($("#fmt"),st.fmt,v=>{st.fmt=v;save();render();});
+seg($("#arq"),st.arq,v=>{st.arq=v;save();render();});
+$("#tema").addEventListener("input",()=>{st.tema=$("#tema").value;save();render();});
+function items(){
+  const S=STAGES[st.fmt], out=[];
+  S.forEach(s=>{ const base=[...(BANK[st.fmt][s]||[])];
+    if(st.fmt==="fondo") (GUEST[st.inv].x[s]||[]).forEach(q=>base.splice(Math.min(base.length,2),0,q));
+    if(st.fmt==="testimonio") (ARQ[st.arq][s]||[]).forEach(q=>base.push(q));
+    base.forEach(q=>out.push({s,q:fill(q),src:"base"}));
+    st.extra.filter(e=>e.f===st.fmt&&e.s===s).forEach(e=>out.push({s,q:e.q,src:e.src,id:e.id})); });
+  return out;
+}
+function render(){
+  $("#arqF").hidden=st.fmt!=="testimonio";
+  const it=items(), S=STAGES[st.fmt]; let on=0;
+  $("#list").innerHTML=S.map(s=>{ const rows=it.filter(i=>i.s===s); return `<div class="stage"><h3>${esc(s)}</h3>${rows.map(r=>{ const k=st.fmt+"|"+r.q, ck=!st.off[k]; if(ck) on++;
+    return `<label class="q"><input type="checkbox" data-k="${esc(k)}"${ck?" checked":""}><span>${esc(r.q)}</span>${r.src!=="base"?`<span class="tag">${r.src==="ia"?"Claude":"Tuya"}</span><button type="button" class="x" data-id="${r.id}" aria-label="Quitar">×</button>`:""}</label>`; }).join("")}</div>`; }).join("");
+  $("#cnt").textContent=`${on} de ${it.length} marcadas`;
+  $$("#list input").forEach(c=>c.addEventListener("change",()=>{ if(c.checked) delete st.off[c.dataset.k]; else st.off[c.dataset.k]=1; save(); render(); }));
+  $$("#list .x").forEach(b=>b.addEventListener("click",e=>{ e.preventDefault(); st.extra=st.extra.filter(x=>String(x.id)!==b.dataset.id); save(); render(); }));
+  $("#ownSt").innerHTML=S.map(s=>`<option>${esc(s)}</option>`).join("");
+  const g=GUEST[st.inv];
+  const t2 = st.fmt==="voxpop" ? "Busca variedad de edades y lugares. Pide permiso antes de grabar y haz la misma pregunta a todas las personas para poder editarlas juntas."
+    : st.fmt==="pingpong" ? "Ritmo rápido: lee la pregunta y espera la respuesta sin comentar. En edición se cortan juntas y funcionan muy bien en redes." : g.tip;
+  $("#tips").innerHTML=`<h2>Consejos</h2><p>Pide respuestas completas que repitan la pregunta («${esc(fill("{t}"))} es…»): tu voz no saldrá en el corte.</p><p>Después de cada respuesta, espera dos segundos en silencio. Muchas veces ahí sale lo mejor.</p><p>${esc(t2)}</p>`;
+}
+$("#addOwn").addEventListener("click",()=>{ const q=$("#own").value.trim(); if(!q) return; st.extra.push({id:Date.now(),f:st.fmt,s:$("#ownSt").value,q,src:"tuya"}); $("#own").value=""; save(); render(); });
+$("#own").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#addOwn").click(); });
+$("#copy").addEventListener("click",()=>{ const it=items().filter(r=>!st.off[st.fmt+"|"+r.q]); if(!it.length){ toast("Marca al menos una pregunta"); return; } let n=0, out=`Entrevista: ${st.tema}\n`;
+  STAGES[st.fmt].forEach(s=>{ const r=it.filter(i=>i.s===s); if(!r.length) return; if(STAGES[st.fmt].length>1) out+=`\n${s.toUpperCase()}\n`; r.forEach(i=>out+=`${++n}. ${i.q}\n`); }); copyText(out.trim()); });
+// Claude, cuando está disponible
+let sample=null;
+(async()=>{ try{ sample=(window.claude&&window.claude.use)? await window.claude.use("sample") : null; }catch(_){ sample=null; } $("#ai").hidden=!sample; })();
+$("#ai").addEventListener("click", async ()=>{
+  if(!sample) return; const b=$("#ai"), S=STAGES[st.fmt]; b.disabled=true; $("#aiMsg").textContent="Pensando…";
+  const ex=items().map(i=>"- "+i.q).join("\n");
+  const prompt=`Eres productor de video institucional en México. Propón 6 preguntas nuevas, en español de México, para ${FDESC[st.fmt]} con ${st.fmt==="fondo"||st.fmt==="testimonio"?GUEST[st.inv].l:"personas en la calle"} sobre «${st.tema||"el tema"}». Deben ser abiertas, concretas, fáciles de responder ante cámara y respetuosas. No repitas ni parafrasees estas:\n${ex}\n\nResponde solo con un arreglo JSON de objetos {"etapa": string, "pregunta": string}. "etapa" debe ser exactamente una de: ${S.map(s=>`"${s}"`).join(", ")}.`;
+  try{ const arr=await sample.json(prompt,{modelTier:"quick",cache:false}); let k=0;
+    (Array.isArray(arr)?arr:[]).forEach(o=>{ const q=String(o&&o.pregunta||"").trim(); if(!q) return; const s=S.includes(o.etapa)?o.etapa:S[Math.min(S.length-1,1)]; st.extra.push({id:Date.now()+(k++),f:st.fmt,s,q,src:"ia"}); });
+    save(); render(); $("#aiMsg").textContent= k? `Claude agregó ${k} preguntas.` : "No llegaron preguntas nuevas; intenta de nuevo.";
+  }catch(e){ const c=e&&e.code; if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(c)){ b.hidden=true; $("#aiMsg").textContent="Las ideas con Claude no están disponibles aquí."; }
+    else if(c==="rate_limited") $("#aiMsg").textContent="Demasiadas solicitudes; espera un momento.";
+    else if(c==="cancelled") $("#aiMsg").textContent=""; else $("#aiMsg").textContent="No se pudo; vuelve a intentarlo."; }
+  b.disabled=false;
+});
+render();
+
+})();
+</script>
+
+</body></html>

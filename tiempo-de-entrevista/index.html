@@ -1,0 +1,177 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Tiempo de Entrevista</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kit de Producción — shared system. Layout: one centered work column, tool panels in a responsive two-up grid, results set in mono */
+:root{
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#191a1c; --muted:#5f6268; --line:#dcdad5; --field:#f8f7f4;
+  --accent:#0b7a75; --accent-ink:#075b57; --on-accent:#ffffff; --soft:#e3f1ef;
+  --good:#1d7f45; --warn:#a85a00; --bad:#b42318;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --ui:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:22px 48px}
+.app{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,34px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:64ch}
+h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:820px){.grid,.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical}
+textarea.mono{font-family:var(--mono);font-size:13px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:17px;height:17px}
+input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px;cursor:pointer}
+input[type=file]{font:inherit;font-size:13px;max-width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:10px 16px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{font-size:13px;padding:6px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.big{font-family:var(--mono);font-size:clamp(28px,5vw,40px);font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv div{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.preview{background:var(--field);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.preview canvas,.preview img{display:block;width:100%;height:auto;max-width:100%}
+.checker{background-color:#c9c9c9;background-image:linear-gradient(45deg,#a9a9a9 25%,transparent 25%),linear-gradient(-45deg,#a9a9a9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#a9a9a9 75%),linear-gradient(-45deg,transparent 75%,#a9a9a9 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.fb{display:flex;flex-direction:column;gap:10px}
+.fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.bar{display:flex;height:40px;border-radius:9px;overflow:hidden;border:1px solid var(--line);font:500 12.5px var(--mono)}
+.bar span{display:flex;align-items:center;padding:0 10px;white-space:nowrap;overflow:hidden;min-width:0}
+.bar .a{background:var(--accent);color:var(--on-accent)}.bar .b{background:var(--field);color:var(--muted)}
+</style>
+<div class="app">
+<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Tiempo de Entrevista</h1><p class="sub">Cuántas respuestas caben en tu video, cuántas preguntas hacer y cuánto grabar con cada persona.</p></header>
+
+<div class="grid">
+  <div class="card">
+    <h2>Tu video</h2>
+    <div class="cols">
+      <label class="f">Duración final<select id="dur"><option value="30">30 s</option><option value="60">1 min</option><option value="90" selected>1:30</option><option value="120">2 min</option><option value="180">3 min</option><option value="300">5 min</option><option value="600">10 min</option></select></label>
+      <label class="f">Personas entrevistadas<input type="number" id="ppl" min="1" max="12" value="2"></label>
+    </div>
+    <label class="f">Parte del video con entrevista <small id="pctV"></small><input type="range" id="pct" min="20" max="100" step="5" value="60"></label>
+    <p class="note">El resto es apoyo visual, gráficos, música o locución.</p>
+    <label class="f">Duración de cada fragmento usado <small id="sbV"></small><input type="range" id="sb" min="4" max="30" value="10"></label>
+    <label class="f">Preguntas por fragmento útil <small id="rtV"></small><input type="range" id="rt" min="1.5" max="4" step="0.5" value="2.5"></label>
+    <p class="note">No todas las respuestas sirven: con 2.5 preguntas sacas un fragmento usable, en promedio.</p>
+  </div>
+  <div class="card">
+    <h2>Plan</h2>
+    <div class="bar" id="bar"></div>
+    <div class="kv">
+      <div><span>Entrevista en el corte</span><b id="sec"></b></div>
+      <div><span>Fragmentos en total</span><b id="sbs"></b></div>
+      <div><span>Fragmentos por persona</span><b id="per"></b></div>
+      <div><span>Preguntas por persona</span><b id="qs"></b></div>
+      <div><span>Grabar por persona</span><b id="rec"></b></div>
+      <div><span>Material total</span><b id="tot"></b></div>
+    </div>
+    <p class="note" id="adv"></p>
+  </div>
+</div>
+
+</div>
+<script>
+(function(){
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ let el=$(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function seg(el, v, cb){ const set=val=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===String(val)))); set(v); el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); cb(b.dataset.v); }); return set; }
+let _dl=null; function dl(){ if(!_dl) _dl=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null); return _dl; }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Copiado"); return true; }catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); toast(ok?"Copiado":"Selecciona el texto y cópialo a mano"); return ok; } }
+function fallbackBox(){ let fb=$("#fallback"); if(!fb){ fb=document.createElement("div"); fb.id="fallback"; fb.className="card fb"; $(".app").appendChild(fb); } fb.innerHTML=""; fb.hidden=false; return fb; }
+async function showFallback(name, data){
+  const fb=fallbackBox(); const h=document.createElement("h2"); h.textContent="Guardar a mano"; fb.appendChild(h);
+  const p=document.createElement("p"); p.className="note"; fb.appendChild(p);
+  if(data instanceof Blob && data.type.startsWith("image/")){ p.textContent="Aquí no se puede descargar directo. Mantén presionada la imagen (o clic derecho › Guardar imagen)."; const img=document.createElement("img"); img.alt=name; img.src=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(data);}); fb.appendChild(img); }
+  else if(typeof data==="string"){ p.textContent="Aquí no se puede descargar directo. Copia el contenido:"; const ta=document.createElement("textarea"); ta.className="mono"; ta.value=data; ta.readOnly=true; fb.appendChild(ta); const b=document.createElement("button"); b.className="btn ghost sm"; b.type="button"; b.textContent="Copiar"; b.onclick=()=>copyText(data); fb.appendChild(b); }
+  else { p.textContent="Aquí no se puede descargar este archivo. Abre la página dentro de claude.ai para guardarlo."; }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function saveFile(name, data){
+  const d=await dl();
+  if(!d){ await showFallback(name, data); return false; }
+  try{ await d.save({filename:name, data}); toast("Listo: "+name); return true; }
+  catch(e){ const c=e&&e.code; if(c==="declined"){ toast("Descarga cancelada"); return false; } if(c==="rate_limited"){ toast("Ya hay una descarga pendiente"); return false; } await showFallback(name, data); return false; }
+}
+function canvasBlob(c, type, q){ return new Promise(r=>c.toBlob(r, type||"image/png", q)); }
+function slug(t){ return (t||"archivo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"archivo"; }
+function readImage(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+function sampleImage(w,h,seed){
+  // Escena de ejemplo generada (no es una foto real)
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); let s=seed||5; const r=()=>{ s=(s*16807)%2147483647; return s/2147483647; };
+  let g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#3d6fb6"); g.addColorStop(.55,"#f2b27a"); g.addColorStop(1,"#5a3b2e"); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.fillStyle="rgba(255,236,200,.95)"; x.beginPath(); x.arc(w*.7,h*.42,h*.09,0,7); x.fill();
+  for(let i=0;i<9;i++){ x.fillStyle=`rgba(${30+i*6},${34+i*5},${48+i*4},.92)`; const bw=w*(.07+r()*.08), bh=h*(.2+r()*.35); x.fillRect(i*w*.115, h*.62-bh, bw, bh+2); }
+  x.fillStyle="#2d2a26"; x.fillRect(0,h*.62,w,h*.38);
+  x.fillStyle="#d9d2c4"; for(let i=0;i<6;i++){ x.fillRect(w*(.08+i*.16), h*.8, w*.08, h*.012); }
+  x.fillStyle="#1b1a18"; x.beginPath(); x.arc(w*.36,h*.52,h*.05,0,7); x.fill(); x.fillRect(w*.33,h*.56,w*.06,h*.2);
+  return c;
+}
+
+
+const ft=s=>{ s=Math.round(s); return s<60? s+" s" : Math.floor(s/60)+" min"+(s%60? " "+(s%60)+" s":""); };
+function calc(){
+  const D=+$("#dur").value, P=Math.max(1,+$("#ppl").value||1), pct=+$("#pct").value/100, sb=+$("#sb").value, rt=+$("#rt").value;
+  $("#pctV").textContent=Math.round(pct*100)+" %"; $("#sbV").textContent=sb+" s"; $("#rtV").textContent=rt;
+  const sec=D*pct, n=Math.max(1,Math.round(sec/sb)), per=n/P, qs=Math.ceil(per*rt)+2, rec=qs*50+180;
+  $("#sec").textContent=ft(sec); $("#sbs").textContent=n; $("#per").textContent=per<1? "1 o menos" : (Math.round(per*10)/10); $("#qs").textContent=qs; $("#rec").textContent="≈ "+ft(rec); $("#tot").textContent="≈ "+ft(rec*P);
+  $("#bar").innerHTML=`<span style="flex:${pct}" class="a">Entrevista ${ft(sec)}</span><span style="flex:${1-pct}" class="b">${pct<1?"Apoyo "+ft(D-sec):""}</span>`;
+  const sbP=Math.max(1,Math.round(per));
+  $("#adv").textContent = per<1 ? `Con ${P} personas y solo ${ft(sec)} de entrevista, no todas saldrán. Considera entrevistar a menos personas o alargar el video.`
+    : `Con cada persona busca ${sbP} respuesta${sbP>1?"s":""} de unos ${sb} s. Incluye 2 preguntas de calentamiento que no saldrán. Calculado con 50 s por respuesta grabada y 3 minutos para preparar.`;
+}
+$$("input,select").forEach(e=>e.addEventListener("input",calc)); calc();
+
+})();
+</script>
+
+</body></html>

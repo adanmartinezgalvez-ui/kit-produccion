@@ -1,0 +1,365 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Taller de Cintillos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Merriweather:wght@400;700&family=Montserrat:wght@500;700;800&family=Noto+Sans:wght@500;700&display=swap">
+<style>
+/* Layout: editing-suite split — controls column left, sticky 16:9 program monitor right; stacks monitor-first on phones */
+:root{
+  --bg:#eceef1; --panel:#ffffff; --ink:#15181c; --muted:#5a626c; --line:#d3d8de;
+  --accent:#e3a400; --accent-ink:#8a6200; --field:#f6f7f9; --tally:#d4372c;
+  --ui:"Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111316; --panel:#1a1d21; --ink:#e8ebee; --muted:#8c949d; --line:#2b3036;
+  --accent:#f2b705; --accent-ink:#f2b705; --field:#22262b; --tally:#ff5a4d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111316; --panel:#1a1d21; --ink:#e8ebee; --muted:#8c949d; --line:#2b3036;
+  --accent:#f2b705; --accent-ink:#f2b705; --field:#22262b; --tally:#ff5a4d; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:14px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 20px}
+h1{margin:0;font-size:22px;font-weight:700;letter-spacing:-.01em;text-wrap:balance;display:flex;align-items:center;gap:10px}
+h1 .rec{width:10px;height:10px;border-radius:50%;background:var(--tally);box-shadow:0 0 0 3px color-mix(in srgb, var(--tally) 25%, transparent)}
+.spec{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:18px;align-items:start}
+.controls{display:flex;flex-direction:column;gap:14px;min-width:0}
+.monitor{position:sticky;top:calc(env(safe-area-inset-top, 0px) + 12px);display:flex;flex-direction:column;gap:10px;min-width:0}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}.monitor{position:static;order:-1}}
+
+.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.box h2{margin:0;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:500}
+input[type=text],textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:7px;padding:9px 10px}
+textarea{font-family:var(--mono);font-size:12.5px;min-height:110px;resize:vertical;line-height:1.55}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13px;padding:7px 10px;border-radius:7px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.tpl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tpl button{font:inherit;font-size:12.5px;font-weight:600;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.tpl button svg{width:100%;height:auto;display:block}
+.tpl button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.swatches{display:flex;flex-wrap:wrap;gap:6px}
+.swatches button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);cursor:pointer;padding:0;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;background:none}
+.swatches button span{display:block}
+.swatches button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.colors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.colors label{display:flex;align-items:center;gap:8px;font-size:12.5px;background:var(--field);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+.colors input[type=color]{width:26px;height:26px;border:none;padding:0;background:none;cursor:pointer;flex:none}
+.colors code{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.check{display:flex;align-items:center;gap:8px;font-size:13px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.rng{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500}
+.rng span{display:flex;justify-content:space-between}
+.rng b{font-family:var(--mono);font-weight:400;font-size:12px;color:var(--muted)}
+
+.stage{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border-radius:8px;overflow:hidden;border:1px solid var(--line);
+  background-color:#bfc4c9;background-image:linear-gradient(45deg,#9aa0a6 25%,transparent 25%),linear-gradient(-45deg,#9aa0a6 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#9aa0a6 75%),linear-gradient(-45deg,transparent 75%,#9aa0a6 75%);
+  background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}
+.stage.scene{background:radial-gradient(60% 80% at 70% 35%,#c9a77f 0,transparent 60%),radial-gradient(40% 60% at 25% 30%,#6f8597 0,transparent 70%),linear-gradient(160deg,#3b4652,#7b6a58 55%,#2a2622)}
+.stage.black{background:#000}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.safe{position:absolute;pointer-events:none;border:1px dashed rgba(255,255,255,.55)}
+.safe.a{inset:5%}.safe.t{inset:10%;border-color:rgba(242,183,5,.8)}
+.safe i{position:absolute;top:4px;left:6px;font:600 10px/1 var(--mono);color:rgba(255,255,255,.75);font-style:normal}
+.safe.t i{color:rgba(242,183,5,.95)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+.btn{font:inherit;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:var(--panel);cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.status{font-size:13px;color:var(--muted);min-height:1.4em}
+.status.ok{color:var(--accent-ink)}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.fallback{display:flex;flex-direction:column;gap:10px}
+.fallback img{width:100%;border-radius:6px;border:1px solid var(--line);background:#9aa0a6}
+.count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1><span class="rec" aria-hidden="true"></span>Taller de Cintillos</h1>
+    <div class="spec" id="spec">1920 × 1080 · PNG RGBA · fondo transparente</div>
+  </header>
+
+  <div class="grid">
+    <section class="controls" aria-label="Ajustes del cintillo">
+      <div class="box">
+        <h2>Texto</h2>
+        <label class="f">Nombre<input type="text" id="name" value="Ana Lucía Torres Medina"></label>
+        <label class="f">Cargo<input type="text" id="role" value="Jefa del Departamento de Difusión"></label>
+        <label class="check"><input type="checkbox" id="upper"> Nombre en mayúsculas</label>
+        <p class="hint">Nombre de ejemplo. Escribe el tuyo o carga una lista abajo.</p>
+      </div>
+
+      <div class="box">
+        <h2>Plantilla</h2>
+        <div class="tpl" id="tpl">
+          <button type="button" data-v="bloque" aria-pressed="true">Bloque doble<svg viewBox="0 0 100 34" aria-hidden="true"><rect x="2" y="6" width="66" height="13" fill="currentColor"/><rect x="2" y="19" width="48" height="9" fill="currentColor" opacity=".45"/></svg></button>
+          <button type="button" data-v="barra" aria-pressed="false">Panel con barra<svg viewBox="0 0 100 34" aria-hidden="true"><rect x="2" y="6" width="4" height="22" fill="currentColor"/><rect x="6" y="6" width="66" height="22" fill="currentColor" opacity=".3"/></svg></button>
+          <button type="button" data-v="linea" aria-pressed="false">Línea limpia<svg viewBox="0 0 100 34" aria-hidden="true"><rect x="2" y="8" width="60" height="7" fill="currentColor"/><rect x="2" y="18" width="40" height="2" fill="currentColor" opacity=".6"/><rect x="2" y="23" width="44" height="5" fill="currentColor" opacity=".45"/></svg></button>
+          <button type="button" data-v="etiqueta" aria-pressed="false">Etiquetas<svg viewBox="0 0 100 34" aria-hidden="true"><rect x="2" y="5" width="64" height="13" rx="6.5" fill="currentColor"/><rect x="10" y="20" width="46" height="10" rx="5" fill="currentColor" opacity=".45"/></svg></button>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Color</h2>
+        <div class="swatches" id="swatches" aria-label="Paletas"></div>
+        <div class="colors">
+          <label><input type="color" id="c1"> Fondo<code id="c1v"></code></label>
+          <label><input type="color" id="c2"> Acento<code id="c2v"></code></label>
+          <label><input type="color" id="c3"> Texto nombre<code id="c3v"></code></label>
+          <label><input type="color" id="c4"> Texto cargo<code id="c4v"></code></label>
+        </div>
+        <div class="rng"><span>Opacidad del panel <b id="opv"></b></span><input type="range" id="op" min="40" max="100" value="92"></div>
+      </div>
+
+      <div class="box">
+        <h2>Tipografía y posición</h2>
+        <label class="f">Tipografía
+          <select id="font">
+            <option value="Montserrat">Montserrat</option>
+            <option value="Barlow Condensed">Barlow Condensed</option>
+            <option value="Noto Sans">Noto Sans</option>
+            <option value="Merriweather">Merriweather</option>
+          </select>
+        </label>
+        <div class="rng"><span>Tamaño <b id="szv"></b></span><input type="range" id="sz" min="70" max="140" value="100"></div>
+        <div class="f" style="font-size:13px;font-weight:500">Alineación
+          <div class="seg" id="align"><button type="button" data-v="left" aria-pressed="true">Izquierda</button><button type="button" data-v="center" aria-pressed="false">Centro</button><button type="button" data-v="right" aria-pressed="false">Derecha</button></div>
+        </div>
+        <div class="f" style="font-size:13px;font-weight:500">Margen
+          <div class="seg" id="margin"><button type="button" data-v="0.1" aria-pressed="true">Título seguro 10%</button><button type="button" data-v="0.05" aria-pressed="false">Acción segura 5%</button></div>
+        </div>
+        <div class="f" style="font-size:13px;font-weight:500">Resolución
+          <div class="seg" id="res"><button type="button" data-v="1920" aria-pressed="true">HD 1080</button><button type="button" data-v="3840" aria-pressed="false">4K UHD</button></div>
+        </div>
+      </div>
+
+      <div class="box">
+        <h2>Varios cintillos a la vez</h2>
+        <label class="f">Uno por línea: <span class="count">Nombre | Cargo</span>
+          <textarea id="batch" spellcheck="false">Ana Lucía Torres Medina | Jefa del Departamento de Difusión
+Jorge Ramírez Ortega | Coordinador de Protección Civil
+María Fernanda López | Directora de Comunicación Social</textarea>
+        </label>
+        <div class="bar"><span class="count" id="bcount"></span><button class="btn alt" type="button" id="dlZip">Descargar todos (.zip)</button></div>
+        <p class="hint">Nombres de ejemplo. Cada PNG sale con el estilo actual y nombre de archivo propio.</p>
+      </div>
+    </section>
+
+    <section class="monitor" aria-label="Vista previa">
+      <div class="stage" id="stage">
+        <canvas id="cv" width="1920" height="1080" aria-label="Vista previa del cintillo"></canvas>
+        <div class="safe a" id="sa"><i>ACCIÓN 90%</i></div>
+        <div class="safe t" id="st"><i>TÍTULO 80%</i></div>
+      </div>
+      <div class="bar">
+        <div class="seg" id="bg" style="flex:1 1 260px"><button type="button" data-v="checker" aria-pressed="true">Transparente</button><button type="button" data-v="scene" aria-pressed="false">Escena</button><button type="button" data-v="black" aria-pressed="false">Negro</button></div>
+        <label class="check"><input type="checkbox" id="guides" checked> Guías seguras</label>
+      </div>
+      <div class="bar">
+        <span class="status" id="status" role="status"></span>
+        <button class="btn" type="button" id="dl">Descargar PNG</button>
+      </div>
+      <p class="hint">El PNG es del cuadro completo con fondo transparente: arrástralo a la línea de tiempo y queda en su lugar, sin acomodarlo.</p>
+      <div class="fallback" id="fallback" hidden></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+const PALETTES = [
+  {n:"Guinda y dorado", c:["#6b1d2f","#bc955c","#ffffff","#1b1b1b"]},
+  {n:"Azul marino", c:["#12355b","#3fa7d6","#ffffff","#ffffff"]},
+  {n:"Verde institucional", c:["#1f5f4a","#d9e7a0","#ffffff","#1a2a20"]},
+  {n:"Grafito y ámbar", c:["#1d1f22","#f2b705","#ffffff","#111111"]},
+  {n:"Blanco", c:["#ffffff","#1d1f22","#111111","#ffffff"]}
+];
+const DEF = {name:"Ana Lucía Torres Medina", role:"Jefa del Departamento de Difusión", upper:false, tpl:"bloque",
+  c:PALETTES[0].c.slice(), op:92, font:"Montserrat", sz:100, align:"left", margin:"0.1", res:"1920", bg:"checker", guides:true};
+let S = Object.assign({}, DEF);
+try{ const saved = JSON.parse(localStorage.getItem("cintillos-v1")||"null"); if(saved) S = Object.assign({}, DEF, saved); }catch(e){}
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+function save(){ try{ localStorage.setItem("cintillos-v1", JSON.stringify(S)); }catch(e){} }
+
+function rr(c,x,y,w,h,r){ c.beginPath(); if(c.roundRect){ c.roundRect(x,y,w,h,r); } else { c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); } c.fill(); }
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`; }
+
+function draw(c, W, H, name, role){
+  c.clearRect(0,0,W,H);
+  const s = H/1080 * (S.sz/100);
+  const fam = `"${S.font}", "Helvetica Neue", Arial, sans-serif`;
+  const cond = S.font === "Barlow Condensed" ? 1.18 : 1;
+  const nS = 52*s*cond, rS = 31*s*cond;
+  const nameT = S.upper ? name.toLocaleUpperCase("es-MX") : name;
+  const fN = `700 ${nS}px ${fam}`, fR = `500 ${rS}px ${fam}`;
+  c.font = fN; const nW = nameT ? c.measureText(nameT).width : 0;
+  c.font = fR; const rW = role ? c.measureText(role).width : 0;
+  const m = parseFloat(S.margin), mx = W*m, by = H*(1-m) - H*0.02;
+  const [c1,c2,c3,c4] = S.c, op = S.op/100;
+  const padX = 26*s, padY = 15*s;
+  const base = (top, h, size) => top + h/2 + size*0.34;
+  function xFor(w, blockW){ const x0 = S.align==="left"? mx : S.align==="right"? W-mx-blockW : (W-blockW)/2;
+    return S.align==="left"? x0 : S.align==="right"? x0+blockW-w : x0+(blockW-w)/2; }
+  c.textAlign = "left";
+
+  if(S.tpl === "bloque"){
+    const nH = nS + padY*2, rH = rS + padY*1.5;
+    const nBW = nW + padX*2, rBW = rW + padX*2, bW = Math.max(nBW, rBW);
+    const yR = by - (role? rH:0), yN = yR - nH;
+    if(nameT){ const x = xFor(nBW,bW); c.fillStyle = hexA(c1,op); c.fillRect(x,yN,nBW,nH); c.font=fN; c.fillStyle=c3; c.fillText(nameT, x+padX, base(yN,nH,nS)); }
+    if(role){ const x = xFor(rBW,bW); c.fillStyle = hexA(c2,op); c.fillRect(x,yR,rBW,rH); c.font=fR; c.fillStyle=c4; c.fillText(role, x+padX, base(yR,rH,rS)); }
+  }
+  else if(S.tpl === "barra"){
+    const gap = 8*s, bar = 9*s;
+    const inner = Math.max(nW, rW), pW = inner + padX*2 + bar;
+    const pH = padY*2.2 + nS + (role? gap + rS : 0);
+    const x = xFor(pW,pW), y = by - pH;
+    c.fillStyle = hexA(c1,op); c.fillRect(x,y,pW,pH);
+    c.fillStyle = c2; const barX = S.align==="right"? x+pW-bar : x; c.fillRect(barX,y,bar,pH);
+    const tx = S.align==="right"? x+padX : x+bar+padX;
+    const tw = (w)=> S.align==="right"? tx + inner - w : S.align==="center"? tx + (inner-w)/2 : tx;
+    c.font=fN; c.fillStyle=c3; c.fillText(nameT, tw(nW), y+padY*1.1+nS*0.78);
+    if(role){ c.font=fR; c.fillStyle=hexA(c3,.86); c.fillText(role, tw(rW), y+padY*1.1+nS+gap+rS*0.8); }
+  }
+  else if(S.tpl === "linea"){
+    const lineH = 5*s, gap = 12*s, inner = Math.max(nW, rW);
+    const total = nS + gap + lineH + gap + rS;
+    const y = by - total, x = xFor(inner, inner);
+    const tw = (w)=> S.align==="right"? x+inner-w : S.align==="center"? x+(inner-w)/2 : x;
+    c.save(); c.shadowColor="rgba(0,0,0,.55)"; c.shadowBlur=14*s; c.shadowOffsetY=2*s;
+    c.font=fN; c.fillStyle=c3; c.fillText(nameT, tw(nW), y+nS*0.8);
+    const lw = Math.max(80*s, nW*0.42); c.fillStyle=c2; c.fillRect(tw(lw), y+nS+gap, lw, lineH);
+    if(role){ c.font=fR; c.fillStyle=c3; c.fillText(role, tw(rW), y+nS+gap*2+lineH+rS*0.8); }
+    c.restore();
+  }
+  else { // etiqueta
+    const nH = nS + padY*1.8, rH = rS + padY*1.3, gap = 8*s, off = 22*s;
+    const nBW = nW + padX*2, rBW = rW + padX*1.6;
+    const bW = Math.max(nBW, rBW + off);
+    const yR = by - (role? rH:0), yN = yR - (role? gap:0) - nH;
+    const xN = xFor(nBW,bW);
+    c.fillStyle = hexA(c1,op); rr(c,xN,yN,nBW,nH,nH/2); c.font=fN; c.fillStyle=c3; c.fillText(nameT, xN+padX, base(yN,nH,nS));
+    if(role){ let xR = xFor(rBW,bW); if(S.align==="left") xR += off; if(S.align==="right") xR -= off;
+      c.fillStyle = hexA(c2,op); rr(c,xR,yR,rBW,rH,rH/2); c.font=fR; c.fillStyle=c4; c.fillText(role, xR+padX*0.8, base(yR,rH,rS)); }
+  }
+}
+
+function dims(){ const W = parseInt(S.res,10); return [W, Math.round(W*9/16)]; }
+function render(){ cv.width = 1920; cv.height = 1080; draw(ctx, 1920, 1080, S.name, S.role); }
+
+// ---------- UI wiring ----------
+function setPressed(groupId, v){ $(groupId).querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===v))); }
+function syncUI(){
+  $("name").value=S.name; $("role").value=S.role; $("upper").checked=S.upper;
+  setPressed("tpl",S.tpl); setPressed("align",S.align); setPressed("margin",S.margin); setPressed("res",S.res); setPressed("bg",S.bg);
+  ["c1","c2","c3","c4"].forEach((k,i)=>{ $(k).value=S.c[i]; $(k+"v").textContent=S.c[i].toUpperCase(); });
+  $("op").value=S.op; $("opv").textContent=S.op+"%"; $("font").value=S.font; $("sz").value=S.sz; $("szv").textContent=S.sz+"%";
+  $("guides").checked=S.guides; $("sa").hidden=!S.guides; $("st").hidden=!S.guides;
+  const st=$("stage"); st.classList.toggle("scene",S.bg==="scene"); st.classList.toggle("black",S.bg==="black");
+  const [W,H]=dims(); $("spec").textContent=`${W} × ${H} · PNG RGBA · fondo transparente`;
+  document.querySelectorAll("#swatches button").forEach((b,i)=>b.setAttribute("aria-pressed", String(PALETTES[i].c.join()===S.c.join())));
+  updateCount();
+}
+function update(){ syncUI(); render(); save(); }
+
+PALETTES.forEach(p=>{ const b=document.createElement("button"); b.type="button"; b.title=p.n; b.setAttribute("aria-label",p.n);
+  b.innerHTML=`<span style="background:${p.c[0]}"></span><span style="background:${p.c[1]}"></span>`;
+  b.addEventListener("click",()=>{ S.c=p.c.slice(); update(); }); $("swatches").appendChild(b); });
+[["tpl","tpl"],["align","align"],["margin","margin"],["res","res"],["bg","bg"]].forEach(([id,key])=>{
+  $(id).addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; S[key]=b.dataset.v; update(); }); });
+$("name").addEventListener("input",e=>{S.name=e.target.value; update();});
+$("role").addEventListener("input",e=>{S.role=e.target.value; update();});
+$("upper").addEventListener("change",e=>{S.upper=e.target.checked; update();});
+["c1","c2","c3","c4"].forEach((k,i)=>$(k).addEventListener("input",e=>{S.c[i]=e.target.value; update();}));
+$("op").addEventListener("input",e=>{S.op=+e.target.value; update();});
+$("sz").addEventListener("input",e=>{S.sz=+e.target.value; update();});
+$("font").addEventListener("change",e=>{S.font=e.target.value; loadFont().then(update);});
+$("guides").addEventListener("change",e=>{S.guides=e.target.checked; update();});
+$("batch").addEventListener("input",updateCount);
+
+function parseBatch(){ return $("batch").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{ const [n,...r]=l.split("|"); return {name:(n||"").trim(), role:r.join("|").trim()}; }).filter(x=>x.name||x.role); }
+function updateCount(){ const n=parseBatch().length; $("bcount").textContent = n===1? "1 cintillo" : `${n} cintillos`; $("dlZip").disabled = n===0; }
+
+function slug(t){ return (t||"cintillo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60) || "cintillo"; }
+function makeBlob(name, role){ const [W,H]=dims(); const off=document.createElement("canvas"); off.width=W; off.height=H;
+  draw(off.getContext("2d"),W,H,name,role); return new Promise(res=>off.toBlob(b=>res({blob:b, url:null, off}), "image/png")); }
+
+function loadFont(){ if(!document.fonts) return Promise.resolve();
+  const f=`"${S.font}"`; return Promise.all([document.fonts.load(`700 52px ${f}`), document.fonts.load(`500 31px ${f}`)]).catch(()=>{}); }
+
+// ---------- Downloads ----------
+let dlP=null;
+function getDl(){ if(!dlP) dlP = (window.claude && window.claude.use) ? window.claude.use("downloads").catch(()=>null) : Promise.resolve(null); return dlP; }
+getDl();
+function status(t, ok){ const el=$("status"); el.textContent=t; el.classList.toggle("ok",!!ok); }
+function showFallback(items){
+  const fb=$("fallback"); fb.innerHTML=""; fb.hidden=false;
+  const p=document.createElement("p"); p.className="hint";
+  p.textContent="Aquí no se puede descargar directo. Mantén presionada cada imagen (o clic derecho › Guardar imagen) para guardarla como PNG.";
+  fb.appendChild(p);
+  items.forEach(it=>{ const img=document.createElement("img"); img.alt=it.label; img.src=it.off.toDataURL("image/png"); fb.appendChild(img); });
+}
+function errMsg(e){ const code=e&&e.code;
+  if(code==="declined") return "Descarga cancelada.";
+  if(code==="rate_limited") return "Ya hay una descarga pendiente; confírmala o espera un momento.";
+  return null; }
+
+$("dl").addEventListener("click", async ()=>{
+  const btn=$("dl"); btn.disabled=true; status("Preparando PNG…");
+  try{
+    await loadFont();
+    const r = await makeBlob(S.name, S.role);
+    const d = await getDl();
+    if(!d){ showFallback([{off:r.off,label:S.name}]); status(""); return; }
+    await d.save({filename:`cintillo-${slug(S.name)}.png`, data:r.blob});
+    status("PNG listo.", true);
+  }catch(e){ const m=errMsg(e); if(m) status(m); else { status(""); const r=await makeBlob(S.name,S.role); showFallback([{off:r.off,label:S.name}]); } }
+  finally{ btn.disabled=false; }
+});
+
+$("dlZip").addEventListener("click", async ()=>{
+  const list=parseBatch(); if(!list.length) return;
+  const btn=$("dlZip"); btn.disabled=true; status(`Generando ${list.length} PNG…`);
+  try{
+    await loadFont();
+    const made=[]; const used={};
+    for(const it of list){ const r=await makeBlob(it.name,it.role); let fn=`cintillo-${slug(it.name)}`; used[fn]=(used[fn]||0)+1; if(used[fn]>1) fn+=`-${used[fn]}`; made.push({fn:fn+".png", blob:r.blob, off:r.off, label:it.name}); }
+    const d=await getDl();
+    if(!d || !window.JSZip){ showFallback(made); status(""); return; }
+    const zip=new JSZip(); made.forEach(m=>zip.file(m.fn, m.blob));
+    const z=await zip.generateAsync({type:"blob"});
+    await d.save({filename:"cintillos.zip", data:z});
+    status(`${made.length} cintillos listos en el .zip.`, true);
+  }catch(e){ const m=errMsg(e); status(m || "No se pudo crear el .zip. Prueba de nuevo o descarga uno por uno."); }
+  finally{ btn.disabled=false; updateCount(); }
+});
+
+syncUI(); render();
+loadFont().then(render);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,211 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Constancias en Lote</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kit de Producción — shared system. Layout: one centered work column, tool panels in a responsive two-up grid, results set in mono */
+:root{
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#191a1c; --muted:#5f6268; --line:#dcdad5; --field:#f8f7f4;
+  --accent:#0b7a75; --accent-ink:#075b57; --on-accent:#ffffff; --soft:#e3f1ef;
+  --good:#1d7f45; --warn:#a85a00; --bad:#b42318;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --ui:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:22px 48px}
+.app{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,34px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:64ch}
+h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:820px){.grid,.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical}
+textarea.mono{font-family:var(--mono);font-size:13px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:17px;height:17px}
+input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px;cursor:pointer}
+input[type=file]{font:inherit;font-size:13px;max-width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:10px 16px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{font-size:13px;padding:6px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.big{font-family:var(--mono);font-size:clamp(28px,5vw,40px);font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv div{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.preview{background:var(--field);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.preview canvas,.preview img{display:block;width:100%;height:auto;max-width:100%}
+.checker{background-color:#c9c9c9;background-image:linear-gradient(45deg,#a9a9a9 25%,transparent 25%),linear-gradient(-45deg,#a9a9a9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#a9a9a9 75%),linear-gradient(-45deg,transparent 75%,#a9a9a9 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.fb{display:flex;flex-direction:column;gap:10px}
+.fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.cert{--c:#0b7a75;aspect-ratio:11/8.5;max-width:100%;background:#fff;color:#222;border-radius:6px;box-shadow:0 2px 14px rgba(0,0,0,.12);padding:3%;container-type:inline-size}
+.cert .in{height:100%;border:5px solid var(--c);outline:1px solid var(--c);outline-offset:-10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.4cqw;padding:3cqw}
+.cert img{max-height:8cqw;width:auto}
+.cert .t{font:700 5.2cqw/1 Helvetica,Arial,sans-serif;letter-spacing:.5cqw;color:var(--c)}
+.cert .p{font:400 1.8cqw Helvetica,Arial,sans-serif;color:#555}
+.cert .nm{font:italic 700 4.6cqw/1.1 "Times New Roman",Times,serif;border-bottom:1px solid var(--c);padding:0 4cqw .6cqw}
+.cert .b{font:400 1.7cqw/1.45 Helvetica,Arial,sans-serif;color:#444;max-width:75cqw}
+.cert .pl{font:400 1.4cqw Helvetica,Arial,sans-serif;color:#555}
+.cert .sigs{display:flex;gap:10cqw;margin-top:2cqw}
+.cert .sig{display:flex;flex-direction:column;align-items:center;font-family:Helvetica,Arial,sans-serif;font-size:1.4cqw}
+.cert .sig .ln{width:26cqw;border-top:1px solid #666;margin-bottom:.6cqw}
+.cert .sig span{color:#666}
+</style>
+<div class="app">
+<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Constancias en Lote</h1><p class="sub">Escribe la lista de participantes y obtén un PDF con una constancia por persona.</p></header>
+
+<div class="grid">
+  <div class="card">
+    <h2>Diseño</h2>
+    <div class="cols">
+      <label class="f">Título<input type="text" id="tt" value="CONSTANCIA"></label>
+      <label class="f">Color<input type="color" id="col" value="#0b7a75"></label>
+    </div>
+    <label class="f">Línea antes del nombre<input type="text" id="pre" value="Se otorga la presente a"></label>
+    <label class="f">Texto<textarea id="body" style="min-height:70px">por su participación en el curso «Fotografía institucional con celular», con una duración de 12 horas.</textarea></label>
+    <label class="f">Lugar y fecha<input type="text" id="place" value="Ciudad de México, noviembre de 2026"></label>
+    <div class="cols">
+      <label class="f">Firma 1: nombre<input type="text" id="s1n" value="Nombre de quien firma"></label>
+      <label class="f">Firma 1: cargo<input type="text" id="s1c" value="Coordinación del curso"></label>
+      <label class="f">Firma 2: nombre <small>opcional</small><input type="text" id="s2n" value=""></label>
+      <label class="f">Firma 2: cargo<input type="text" id="s2c" value=""></label>
+    </div>
+    <label class="f">Logo <small>opcional, PNG o JPG</small><input type="file" id="logo" accept="image/png,image/jpeg"></label>
+    <label class="f">Participantes <small>uno por línea</small><textarea class="mono" id="names">María Fernanda López Ruiz
+Jorge Ramírez Ortega
+Ana Lucía Torres Medina</textarea></label>
+    <p class="note">Nombres y firmas de ejemplo: reemplázalos con los reales.</p>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>Vista previa</h2><span class="tag" id="cnt"></span></div>
+    <div class="cert" id="cert"></div>
+    <button class="btn" type="button" id="go">Descargar PDF</button>
+    <p class="note">Tamaño carta horizontal, una página por participante, listo para imprimir o mandar por correo.</p>
+  </div>
+</div>
+
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script>
+(function(){
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ let el=$(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function seg(el, v, cb){ const set=val=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===String(val)))); set(v); el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); cb(b.dataset.v); }); return set; }
+let _dl=null; function dl(){ if(!_dl) _dl=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null); return _dl; }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Copiado"); return true; }catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); toast(ok?"Copiado":"Selecciona el texto y cópialo a mano"); return ok; } }
+function fallbackBox(){ let fb=$("#fallback"); if(!fb){ fb=document.createElement("div"); fb.id="fallback"; fb.className="card fb"; $(".app").appendChild(fb); } fb.innerHTML=""; fb.hidden=false; return fb; }
+async function showFallback(name, data){
+  const fb=fallbackBox(); const h=document.createElement("h2"); h.textContent="Guardar a mano"; fb.appendChild(h);
+  const p=document.createElement("p"); p.className="note"; fb.appendChild(p);
+  if(data instanceof Blob && data.type.startsWith("image/")){ p.textContent="Aquí no se puede descargar directo. Mantén presionada la imagen (o clic derecho › Guardar imagen)."; const img=document.createElement("img"); img.alt=name; img.src=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(data);}); fb.appendChild(img); }
+  else if(typeof data==="string"){ p.textContent="Aquí no se puede descargar directo. Copia el contenido:"; const ta=document.createElement("textarea"); ta.className="mono"; ta.value=data; ta.readOnly=true; fb.appendChild(ta); const b=document.createElement("button"); b.className="btn ghost sm"; b.type="button"; b.textContent="Copiar"; b.onclick=()=>copyText(data); fb.appendChild(b); }
+  else { p.textContent="Aquí no se puede descargar este archivo. Abre la página dentro de claude.ai para guardarlo."; }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function saveFile(name, data){
+  const d=await dl();
+  if(!d){ await showFallback(name, data); return false; }
+  try{ await d.save({filename:name, data}); toast("Listo: "+name); return true; }
+  catch(e){ const c=e&&e.code; if(c==="declined"){ toast("Descarga cancelada"); return false; } if(c==="rate_limited"){ toast("Ya hay una descarga pendiente"); return false; } await showFallback(name, data); return false; }
+}
+function canvasBlob(c, type, q){ return new Promise(r=>c.toBlob(r, type||"image/png", q)); }
+function slug(t){ return (t||"archivo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"archivo"; }
+function readImage(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+function sampleImage(w,h,seed){
+  // Escena de ejemplo generada (no es una foto real)
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); let s=seed||5; const r=()=>{ s=(s*16807)%2147483647; return s/2147483647; };
+  let g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#3d6fb6"); g.addColorStop(.55,"#f2b27a"); g.addColorStop(1,"#5a3b2e"); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.fillStyle="rgba(255,236,200,.95)"; x.beginPath(); x.arc(w*.7,h*.42,h*.09,0,7); x.fill();
+  for(let i=0;i<9;i++){ x.fillStyle=`rgba(${30+i*6},${34+i*5},${48+i*4},.92)`; const bw=w*(.07+r()*.08), bh=h*(.2+r()*.35); x.fillRect(i*w*.115, h*.62-bh, bw, bh+2); }
+  x.fillStyle="#2d2a26"; x.fillRect(0,h*.62,w,h*.38);
+  x.fillStyle="#d9d2c4"; for(let i=0;i<6;i++){ x.fillRect(w*(.08+i*.16), h*.8, w*.08, h*.012); }
+  x.fillStyle="#1b1a18"; x.beginPath(); x.arc(w*.36,h*.52,h*.05,0,7); x.fill(); x.fillRect(w*.33,h*.56,w*.06,h*.2);
+  return c;
+}
+
+
+const IDS=["tt","col","pre","body","place","s1n","s1c","s2n","s2c","names"]; let logo=null;
+const S=store.get("cst-v1",null); if(S) IDS.forEach(k=>{ if(S[k]!=null) $("#"+k).value=S[k]; });
+const v=k=>$("#"+k).value, esc=t=>t.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const names=()=>v("names").split("\n").map(n=>n.trim()).filter(Boolean);
+function prev(){
+  const n=names(), c=v("col"); $("#cnt").textContent=n.length+(n.length===1?" constancia":" constancias");
+  const sig=(a,b)=>a?`<div class="sig"><div class="ln"></div><b>${esc(a)}</b><span>${esc(b)}</span></div>`:"";
+  $("#cert").style.setProperty("--c",c);
+  $("#cert").innerHTML=`<div class="in">${logo?`<img src="${logo.src}" alt="">`:""}<div class="t">${esc(v("tt"))}</div><div class="p">${esc(v("pre"))}</div><div class="nm">${esc(n[0]||"Nombre del participante")}</div><div class="b">${esc(v("body"))}</div><div class="pl">${esc(v("place"))}</div><div class="sigs">${sig(v("s1n"),v("s1c"))}${sig(v("s2n"),v("s2c"))}</div></div>`;
+  const o={}; IDS.forEach(k=>o[k]=v(k)); store.set("cst-v1",o);
+}
+IDS.forEach(k=>$("#"+k).addEventListener("input",prev));
+$("#logo").addEventListener("change", async e=>{ const f=e.target.files[0]; if(!f) return; const url=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f);}); const im=new Image(); im.onload=()=>{ logo={src:url,w:im.width,h:im.height,fmt:f.type.includes("png")?"PNG":"JPEG"}; prev(); }; im.src=url; });
+function rgb(h){ const n=parseInt(h.slice(1),16); return [n>>16&255,n>>8&255,n&255]; }
+$("#go").addEventListener("click", async ()=>{
+  if(!window.jspdf){ toast("Cargando generador de PDF, intenta de nuevo"); return; }
+  const list=names(); if(!list.length){ toast("Agrega al menos un nombre"); return; }
+  const { jsPDF }=window.jspdf, doc=new jsPDF({orientation:"landscape",unit:"pt",format:"letter"}), W=792, H=612, c=rgb(v("col"));
+  list.forEach((nm,i)=>{
+    if(i) doc.addPage();
+    doc.setDrawColor(...c); doc.setLineWidth(6); doc.rect(24,24,W-48,H-48); doc.setLineWidth(1); doc.rect(36,36,W-72,H-72);
+    let y=86;
+    if(logo){ const lh=56, lw=lh*logo.w/logo.h; doc.addImage(logo.src,logo.fmt,(W-lw)/2,58,lw,lh); y=150; }
+    doc.setTextColor(...c); doc.setFont("helvetica","bold"); doc.setFontSize(38); doc.text(v("tt"),W/2,y+20,{align:"center",charSpace:4});
+    doc.setTextColor(60,60,60); doc.setFont("helvetica","normal"); doc.setFontSize(14); doc.text(v("pre"),W/2,y+58,{align:"center"});
+    doc.setTextColor(20,20,20); doc.setFont("times","bolditalic"); let fs=36; doc.setFontSize(fs); while(doc.getTextWidth(nm)>W-160 && fs>18){ fs-=2; doc.setFontSize(fs); } doc.text(nm,W/2,y+108,{align:"center"});
+    doc.setDrawColor(...c); doc.setLineWidth(1); doc.line(W/2-200,y+120,W/2+200,y+120);
+    doc.setTextColor(60,60,60); doc.setFont("helvetica","normal"); doc.setFontSize(13); const lines=doc.splitTextToSize(v("body"),W-220); doc.text(lines,W/2,y+148,{align:"center",lineHeightFactor:1.4});
+    doc.setFontSize(11); doc.text(v("place"),W/2,y+160+lines.length*18,{align:"center"});
+    const sigs=[[v("s1n"),v("s1c")],[v("s2n"),v("s2c")]].filter(s=>s[0]); const sy=H-112;
+    sigs.forEach((s,j)=>{ const cx = sigs.length===1? W/2 : (j? W*0.68 : W*0.32); doc.setDrawColor(90,90,90); doc.line(cx-120,sy,cx+120,sy); doc.setTextColor(20,20,20); doc.setFont("helvetica","bold"); doc.setFontSize(11.5); doc.text(s[0],cx,sy+16,{align:"center"}); doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(90,90,90); doc.text(s[1],cx,sy+30,{align:"center"}); });
+  });
+  saveFile(slug(v("tt"))+"-"+list.length+".pdf", doc.output("blob"));
+});
+prev();
+
+})();
+</script>
+
+</body></html>

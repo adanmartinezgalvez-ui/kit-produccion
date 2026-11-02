@@ -1,0 +1,236 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Pantalla de Preguntas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kit de Producción — shared system. Layout: one centered work column, tool panels in a responsive two-up grid, results set in mono */
+:root{
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#191a1c; --muted:#5f6268; --line:#dcdad5; --field:#f8f7f4;
+  --accent:#0b7a75; --accent-ink:#075b57; --on-accent:#ffffff; --soft:#e3f1ef;
+  --good:#1d7f45; --warn:#a85a00; --bad:#b42318;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --ui:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:22px 48px}
+.app{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,34px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:64ch}
+h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:820px){.grid,.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical}
+textarea.mono{font-family:var(--mono);font-size:13px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:17px;height:17px}
+input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px;cursor:pointer}
+input[type=file]{font:inherit;font-size:13px;max-width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:10px 16px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{font-size:13px;padding:6px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.big{font-family:var(--mono);font-size:clamp(28px,5vw,40px);font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv div{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.preview{background:var(--field);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.preview canvas,.preview img{display:block;width:100%;height:auto;max-width:100%}
+.checker{background-color:#c9c9c9;background-image:linear-gradient(45deg,#a9a9a9 25%,transparent 25%),linear-gradient(-45deg,#a9a9a9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#a9a9a9 75%),linear-gradient(-45deg,transparent 75%,#a9a9a9 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.fb{display:flex;flex-direction:column;gap:10px}
+.fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.screen{position:relative;background:#0f1113;color:#f4f3ef;border-radius:12px;aspect-ratio:16/9;max-width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4%;cursor:pointer;overflow:hidden;user-select:none}
+.screen:fullscreen{border-radius:0;aspect-ratio:auto;width:100%;height:100%}
+.qtext{font-family:var(--display);font-weight:600;line-height:1.15;text-align:center;text-wrap:balance;max-width:100%}
+.screen.hidden-card{background:repeating-linear-gradient(45deg,#0b5f5b 0 18px,#0b7a75 18px 36px)}
+.screen.hidden-card .qtext{font-size:min(30vh,180px)!important;color:#fff;font-weight:800}
+.hint{position:absolute;bottom:5%;left:0;right:0;text-align:center;font:500 14px var(--mono);color:rgba(255,255,255,.65)}
+.timer{position:absolute;left:0;right:0;bottom:0;height:8px;background:rgba(255,255,255,.12)}
+.timer div{height:100%;width:100%;background:#3cc7bd}
+.nav{justify-content:space-between}
+.remote{max-width:560px;width:100%;align-self:center}
+.rq{font-family:var(--display);font-weight:600;font-size:clamp(20px,5vw,28px);line-height:1.25;min-height:3em;padding:14px;border-radius:10px;background:var(--field)}
+.rbtns{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+.rb{font:700 18px var(--ui);padding:22px 10px;border-radius:12px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.rb.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+#rpause{grid-column:1/3}
+</style>
+<div class="app">
+<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Pantalla de Preguntas</h1><p class="sub">Muestra las preguntas en grande frente al entrevistado: en orden, sorpresa o ping pong con temporizador. Puedes manejarla desde otro celular.</p></header>
+
+<div class="grid wide" id="editor">
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h2>Preguntas</h2><span class="note">Una por línea</span></div>
+    <textarea id="qs" style="min-height:260px" aria-label="Preguntas, una por línea">¿Cómo te presentas? Tu nombre y a qué te dedicas.
+En palabras sencillas, ¿qué es el simulacro de sismo?
+¿Por qué es importante participar?
+¿Qué es lo primero que hay que hacer cuando suena la alerta?
+¿Qué error ves con más frecuencia?
+Cuéntame una historia que te haya marcado.
+En una frase, ¿qué mensaje le darías a quien nos ve?</textarea>
+    <label class="f">Modo<div class="seg" id="mode"><button type="button" data-v="orden">En orden</button><button type="button" data-v="azar">Sorpresa</button><button type="button" data-v="ping">Ping pong</button></div></label>
+    <p class="note" id="modeNote"></p>
+    <label class="f" id="secF" hidden>Segundos por pregunta <small id="secV"></small><input type="range" id="sec" min="3" max="20" value="6"></label>
+  </div>
+  <div class="card remote-setup" id="remoteBox" hidden>
+    <h2>Control remoto</h2>
+    <p class="note">Abre esta misma página en otro celular o en la compu y elige ahí «Usar como control». Desde el control ves la pregunta y avanzas sin tocar la pantalla del entrevistado.</p>
+    <p class="note"><span id="rconn">Conectando…</span> · <span id="rpeers"></span></p>
+    <button class="btn ghost" type="button" id="toRemote">Usar este dispositivo como control</button>
+  </div>
+</div>
+
+<div class="card" id="stageCard">
+  <div class="row" style="justify-content:space-between"><span class="tag" id="pos"></span><div class="row"><button class="btn ghost sm" type="button" id="restart">Reiniciar</button><button class="btn sm" type="button" id="fs">Pantalla completa</button></div></div>
+  <div class="screen" id="screen" tabindex="0" aria-live="polite">
+    <div class="qtext" id="qtext"></div>
+    <div class="hint" id="hint"></div>
+    <div class="timer" id="timer" hidden><div id="tbar"></div></div>
+  </div>
+  <div class="row nav"><button class="btn ghost" type="button" id="prev">← Anterior</button><button class="btn ghost" type="button" id="pause" hidden>Pausa</button><button class="btn" type="button" id="next">Siguiente →</button></div>
+</div>
+
+<div class="card remote" id="remote" hidden>
+  <div class="row" style="justify-content:space-between"><h2>Control remoto</h2><button class="btn ghost sm" type="button" id="leaveRemote">Volver a pantalla</button></div>
+  <p class="note" id="rstate">Esperando la pantalla… abre la página en el otro dispositivo.</p>
+  <div class="rq" id="rq"></div>
+  <div class="rbtns"><button type="button" class="rb" data-a="prev">Anterior</button><button type="button" class="rb main" data-a="next">Siguiente</button><button type="button" class="rb" data-a="pause" id="rpause">Pausa</button></div>
+</div>
+
+</div>
+<script>
+(function(){
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ let el=$(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function seg(el, v, cb){ const set=val=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===String(val)))); set(v); el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); cb(b.dataset.v); }); return set; }
+let _dl=null; function dl(){ if(!_dl) _dl=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null); return _dl; }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Copiado"); return true; }catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); toast(ok?"Copiado":"Selecciona el texto y cópialo a mano"); return ok; } }
+function fallbackBox(){ let fb=$("#fallback"); if(!fb){ fb=document.createElement("div"); fb.id="fallback"; fb.className="card fb"; $(".app").appendChild(fb); } fb.innerHTML=""; fb.hidden=false; return fb; }
+async function showFallback(name, data){
+  const fb=fallbackBox(); const h=document.createElement("h2"); h.textContent="Guardar a mano"; fb.appendChild(h);
+  const p=document.createElement("p"); p.className="note"; fb.appendChild(p);
+  if(data instanceof Blob && data.type.startsWith("image/")){ p.textContent="Aquí no se puede descargar directo. Mantén presionada la imagen (o clic derecho › Guardar imagen)."; const img=document.createElement("img"); img.alt=name; img.src=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(data);}); fb.appendChild(img); }
+  else if(typeof data==="string"){ p.textContent="Aquí no se puede descargar directo. Copia el contenido:"; const ta=document.createElement("textarea"); ta.className="mono"; ta.value=data; ta.readOnly=true; fb.appendChild(ta); const b=document.createElement("button"); b.className="btn ghost sm"; b.type="button"; b.textContent="Copiar"; b.onclick=()=>copyText(data); fb.appendChild(b); }
+  else { p.textContent="Aquí no se puede descargar este archivo. Abre la página dentro de claude.ai para guardarlo."; }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function saveFile(name, data){
+  const d=await dl();
+  if(!d){ await showFallback(name, data); return false; }
+  try{ await d.save({filename:name, data}); toast("Listo: "+name); return true; }
+  catch(e){ const c=e&&e.code; if(c==="declined"){ toast("Descarga cancelada"); return false; } if(c==="rate_limited"){ toast("Ya hay una descarga pendiente"); return false; } await showFallback(name, data); return false; }
+}
+function canvasBlob(c, type, q){ return new Promise(r=>c.toBlob(r, type||"image/png", q)); }
+function slug(t){ return (t||"archivo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"archivo"; }
+function readImage(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+function sampleImage(w,h,seed){
+  // Escena de ejemplo generada (no es una foto real)
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const x=c.getContext("2d"); let s=seed||5; const r=()=>{ s=(s*16807)%2147483647; return s/2147483647; };
+  let g=x.createLinearGradient(0,0,0,h); g.addColorStop(0,"#3d6fb6"); g.addColorStop(.55,"#f2b27a"); g.addColorStop(1,"#5a3b2e"); x.fillStyle=g; x.fillRect(0,0,w,h);
+  x.fillStyle="rgba(255,236,200,.95)"; x.beginPath(); x.arc(w*.7,h*.42,h*.09,0,7); x.fill();
+  for(let i=0;i<9;i++){ x.fillStyle=`rgba(${30+i*6},${34+i*5},${48+i*4},.92)`; const bw=w*(.07+r()*.08), bh=h*(.2+r()*.35); x.fillRect(i*w*.115, h*.62-bh, bw, bh+2); }
+  x.fillStyle="#2d2a26"; x.fillRect(0,h*.62,w,h*.38);
+  x.fillStyle="#d9d2c4"; for(let i=0;i<6;i++){ x.fillRect(w*(.08+i*.16), h*.8, w*.08, h*.012); }
+  x.fillStyle="#1b1a18"; x.beginPath(); x.arc(w*.36,h*.52,h*.05,0,7); x.fill(); x.fillRect(w*.33,h*.56,w*.06,h*.2);
+  return c;
+}
+
+
+let st=store.get("pq-v1",{qs:null,mode:"orden",sec:6}); if(st.qs) $("#qs").value=st.qs; $("#sec").value=st.sec;
+let order=[], i=0, revealed=true, running=false, left=0, timer=0, remoteMode=false, room=null;
+const list=()=>$("#qs").value.split("\n").map(s=>s.trim()).filter(Boolean);
+function setup(){ const n=list().length; order=[...Array(n).keys()]; if(st.mode==="azar"||st.mode==="ping"){ for(let k=n-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [order[k],order[j]]=[order[j],order[k]]; } } i=0; revealed= st.mode!=="azar"; stopT(); show(); }
+function save(){ st.qs=$("#qs").value; st.sec=+$("#sec").value; store.set("pq-v1",st); }
+const notes={orden:"Las preguntas salen en el orden de la lista.",azar:"Salen revueltas y boca abajo: el entrevistado toca la pantalla para descubrir cada una. Respuestas más espontáneas.",ping:"Revueltas y con temporizador: cuando se acaba el tiempo pasa sola a la siguiente."};
+function q(){ const l=list(); return l.length? l[order[i]] : ""; }
+function show(){
+  const l=list(), n=l.length; $("#modeNote").textContent=notes[st.mode]; $("#secF").hidden=st.mode!=="ping"; $("#secV").textContent=$("#sec").value+" s";
+  $("#pos").textContent= n? `Pregunta ${i+1} de ${n}` : "Sin preguntas";
+  const scr=$("#screen"); scr.classList.toggle("hidden-card", !revealed);
+  $("#qtext").textContent = !n ? "Escribe tus preguntas en la lista." : revealed ? q() : "?";
+  $("#hint").textContent = !n ? "" : !revealed ? "Toca para descubrir la pregunta" : i===n-1 ? "Última pregunta" : "";
+  $("#timer").hidden=st.mode!=="ping"; $("#pause").hidden=st.mode!=="ping"; $("#pause").textContent=running?"Pausa":"Iniciar";
+  fit(); broadcast();
+}
+function fit(){ const t=$("#qtext"), s=$("#screen"); let fs=Math.min(s.clientWidth/9, 110); t.style.fontSize=fs+"px"; let g=0; while(g++<40 && (t.scrollHeight>s.clientHeight*0.78 || t.scrollWidth>s.clientWidth*0.92) && fs>16){ fs*=0.92; t.style.fontSize=fs+"px"; } }
+function act(a){ const n=list().length; if(!n) return;
+  if(a==="next"){ if(st.mode==="azar" && !revealed){ revealed=true; } else if(i<n-1){ i++; revealed= st.mode!=="azar"; if(st.mode==="ping"&&running) resetT(); } else if(st.mode==="ping"){ stopT(); } }
+  else if(a==="prev"){ if(i>0){ i--; revealed=true; if(st.mode==="ping"&&running) resetT(); } }
+  else if(a==="reveal"){ revealed=true; }
+  else if(a==="pause"){ if(st.mode==="ping"){ running? stopT() : startT(); } }
+  show(); }
+function resetT(){ left=+$("#sec").value*1000; }
+function startT(){ if(!list().length) return; running=true; resetT(); let last=performance.now(); clearInterval(timer); timer=setInterval(()=>{ const now=performance.now(); left-=now-last; last=now; $("#tbar").style.width=Math.max(0,left/(+$("#sec").value*1000)*100)+"%"; if(left<=0){ if(i<list().length-1){ i++; resetT(); show(); } else { stopT(); show(); } } },50); show(); }
+function stopT(){ running=false; clearInterval(timer); $("#tbar").style.width="100%"; }
+$("#next").addEventListener("click",()=>act("next")); $("#prev").addEventListener("click",()=>act("prev")); $("#pause").addEventListener("click",()=>act("pause"));
+$("#restart").addEventListener("click",setup);
+$("#screen").addEventListener("click",e=>{ const r=$("#screen").getBoundingClientRect(); act((e.clientX-r.left)<r.width*0.3 && revealed ? "prev" : "next"); });
+document.addEventListener("keydown",e=>{ if(remoteMode || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return; if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); act("next"); } else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); act("prev"); } else if(e.key.toLowerCase()==="p"){ act("pause"); } });
+$("#fs").addEventListener("click", async ()=>{ try{ if(document.fullscreenElement) await document.exitFullscreen(); else await $("#screen").requestFullscreen(); }catch(_){ toast("Pantalla completa no disponible aquí"); } });
+document.addEventListener("fullscreenchange",()=>setTimeout(fit,60)); window.addEventListener("resize",fit);
+seg($("#mode"),st.mode,v=>{ st.mode=v; save(); setup(); });
+$("#qs").addEventListener("input",()=>{ save(); setup(); }); $("#sec").addEventListener("input",()=>{ save(); show(); });
+// ---- control remoto con room ----
+function broadcast(){ if(!room||remoteMode) return; const l=list(); room.emit("state",{i, n:l.length, q:String(q()).slice(0,900), revealed, mode:st.mode, running}).catch(()=>{}); }
+function showRemote(d){ if(!d) return; $("#rstate").textContent= d.n? `Pregunta ${d.i+1} de ${d.n}${d.mode==="azar"&&!d.revealed?" · aún oculta para el entrevistado":""}` : "La pantalla no tiene preguntas."; $("#rq").textContent=d.q||""; $("#rpause").hidden=d.mode!=="ping"; $("#rpause").textContent=d.running?"Pausa":"Iniciar"; }
+(async()=>{ try{ room=(window.claude&&window.claude.use)? await window.claude.use("room") : null; }catch(_){ room=null; }
+  if(!room) return; $("#remoteBox").hidden=false;
+  room.on("nav",m=>{ if(m.sameTab||remoteMode) return; const a=m.data&&m.data.a; if(a==="sync") broadcast(); else if(["next","prev","pause","reveal"].includes(a)) act(a); }, ()=>{ $("#remoteBox").hidden=true; });
+  room.on("state",m=>{ if(m.sameTab||!remoteMode) return; showRemote(m.data); });
+  room.onConnection(c=>{ $("#rconn").textContent= c? "Conectado" : "Conectando…"; if(c && remoteMode) room.emit("nav",{a:"sync"}).catch(()=>{}); });
+  room.onPeers(ch=>{ const o=ch.peers.filter(p=>!p.sameTab && p.kind==="viewer").length; $("#rpeers").textContent= o? `${o} dispositivo${o>1?"s":""} más con esta página abierta` : "Ningún otro dispositivo todavía"; if(ch.joined.some(p=>!p.sameTab)) broadcast(); });
+})();
+function setRemote(on){ remoteMode=on; $("#editor").hidden=on; $("#stageCard").hidden=on; $("#remote").hidden=!on; if(on){ stopT(); room&&room.emit("nav",{a:"sync"}).catch(()=>{}); } else show(); }
+$("#toRemote").addEventListener("click",()=>setRemote(true)); $("#leaveRemote").addEventListener("click",()=>setRemote(false));
+$$(".rb").forEach(b=>b.addEventListener("click",()=>{ if(!room) return; room.emit("nav",{a:b.dataset.a}).catch(()=>toast("No se pudo enviar")); if(navigator.vibrate) try{navigator.vibrate(15);}catch(_){} }));
+setup();
+
+})();
+</script>
+
+</body></html>

@@ -1,0 +1,453 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Banco de Transiciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: monitor de video arriba (escena + controles + línea de tiempo), rejilla de transiciones debajo, lista de favoritas al final */
+:root {
+  --bg: #eceff2;
+  --panel: #ffffff;
+  --fg: #151a20;
+  --muted: #5a6572;
+  --line: #d3d9df;
+  --accent: #0b7f86;
+  --accent-fg: #ffffff;
+  --accent-soft: #d6eeef;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181c;
+    --panel: #1d2329;
+    --fg: #e8edf1;
+    --muted: #9aa6b2;
+    --line: #333c45;
+    --accent: #3cc2c8;
+    --accent-fg: #07262a;
+    --accent-soft: #17383b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181c;
+  --panel: #1d2329;
+  --fg: #e8edf1;
+  --muted: #9aa6b2;
+  --line: #333c45;
+  --accent: #3cc2c8;
+  --accent-fg: #07262a;
+  --accent-soft: #17383b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-inline: 16px;
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1040px; margin-inline: auto; display: flex; flex-direction: column; gap: 28px; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: clamp(1.9rem, 5vw, 2.8rem); font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 62ch; margin-top: 10px; }
+.label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Monitor */
+.monitor { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 4px; isolation: isolate; }
+.scene { position: absolute; inset: 0; will-change: transform, opacity, clip-path, filter; }
+.scene svg { display: block; width: 100%; height: 100%; }
+.chip { position: absolute; left: 10px; top: 10px; z-index: 10; background: rgba(0,0,0,0.62); color: #fff; font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 3px; }
+.name-chip { position: absolute; right: 10px; top: 10px; z-index: 10; background: rgba(0,0,0,0.62); color: #fff; font-family: var(--font-mono); font-size: 0.78rem; padding: 3px 9px; border-radius: 3px; max-width: 60%; }
+
+.transport { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.btn-play { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: 4px; padding: 9px 20px; font-weight: 600; min-width: 128px; }
+.btn-play:hover { filter: brightness(1.08); }
+.ctl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ctl label { color: var(--muted); font-size: 0.85rem; }
+.ctl input[type="range"] { accent-color: var(--accent); width: 140px; max-width: 100%; }
+.ctl select { background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; max-width: 100%; }
+.ctl .val { font-family: var(--font-mono); font-size: 0.85rem; min-width: 3.4ch; font-variant-numeric: tabular-nums; }
+.ctl input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.timeline { display: flex; flex-direction: column; gap: 6px; }
+.timeline input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+.readout { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Rejilla */
+.section-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 12px; }
+.card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; display: flex; min-width: 0; }
+.card.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+.pick { flex: 1; min-width: 0; text-align: left; background: transparent; border: 0; padding: 14px 48px 14px 14px; display: flex; flex-direction: column; gap: 6px; border-radius: 6px; }
+.pick:hover { background: var(--accent-soft); }
+.pick .nm { font-family: var(--font-display); font-weight: 700; font-size: 1.08rem; }
+.pick .ds { color: var(--fg); font-size: 0.9rem; }
+.pick .us { color: var(--muted); font-size: 0.84rem; }
+.fav { position: absolute; right: 6px; top: 6px; width: 38px; height: 38px; background: transparent; border: 0; border-radius: 4px; display: grid; place-items: center; color: var(--muted); }
+.fav:hover { color: var(--fg); }
+.fav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.fav[aria-pressed="true"] { color: var(--accent); }
+.fav[aria-pressed="true"] svg { fill: currentColor; }
+
+/* Favoritas */
+.picks { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 32px; align-items: center; }
+.tag { background: var(--accent-soft); color: var(--fg); border-radius: 3px; padding: 3px 10px; font-size: 0.88rem; }
+.empty { color: var(--muted); font-size: 0.9rem; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.btn-copy { background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 4px; padding: 8px 16px; font-weight: 600; }
+.btn-copy:hover { background: var(--accent-soft); }
+.btn-copy:disabled { opacity: 0.45; cursor: default; background: transparent; }
+.msg { color: var(--muted); font-size: 0.88rem; }
+#copybox { width: 100%; min-height: 70px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; font-family: var(--font-mono); font-size: 0.82rem; resize: vertical; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="label">Demo para edición de video</div>
+    <h1>Banco de transiciones</h1>
+    <p class="lead">Nueve transiciones entre dos escenas de prueba. Elige una para verla, mueve la línea de tiempo para revisar cuadro por cuadro y marca las que quieras que prepare como clips.</p>
+  </header>
+
+  <section class="monitor" aria-label="Monitor de previsualización">
+    <div class="stage" id="stage">
+      <div class="scene" id="sceneA">
+        <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="skyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fa9d6"/><stop offset="1" stop-color="#dfeaf5"/></linearGradient>
+          </defs>
+          <rect width="1600" height="900" fill="url(#skyA)"/>
+          <circle cx="1330" cy="170" r="70" fill="#fff6d8" opacity="0.9"/>
+          <rect x="0" y="720" width="1600" height="180" fill="#b9c3cc"/>
+          <g fill="#f2f0ea">
+            <polygon points="330,330 800,170 1270,330"/>
+            <rect x="330" y="330" width="940" height="46"/>
+            <rect x="360" y="376" width="880" height="24" fill="#d8d5cc"/>
+            <rect x="360" y="400" width="880" height="270" fill="#e7e3d9"/>
+            <rect x="320" y="670" width="960" height="26"/>
+            <rect x="290" y="696" width="1020" height="26" fill="#e7e3d9"/>
+            <rect x="260" y="722" width="1080" height="26" fill="#d8d5cc"/>
+          </g>
+          <g fill="#fbfaf6">
+            <rect x="400" y="400" width="52" height="270"/><rect x="522" y="400" width="52" height="270"/>
+            <rect x="644" y="400" width="52" height="270"/><rect x="904" y="400" width="52" height="270"/>
+            <rect x="1026" y="400" width="52" height="270"/><rect x="1148" y="400" width="52" height="270"/>
+          </g>
+          <rect x="740" y="470" width="120" height="200" fill="#4a5c70"/>
+          <polygon points="800,215 740,310 860,310" fill="#c9c5b9"/>
+          <circle cx="170" cy="640" r="105" fill="#5e8d68"/><rect x="160" y="700" width="20" height="40" fill="#5b4a3a"/>
+          <circle cx="1440" cy="650" r="95" fill="#4f7f5a"/><rect x="1430" y="705" width="20" height="40" fill="#5b4a3a"/>
+          <text x="800" y="840" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="34" letter-spacing="10" fill="#33414f">PLAZA · TOMA 01</text>
+          <text x="60" y="880" font-family="Bricolage Grotesque, sans-serif" font-weight="700" font-size="170" fill="#1d2b3a" opacity="0.18">A</text>
+        </svg>
+      </div>
+      <div class="scene" id="sceneB">
+        <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <linearGradient id="skyB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2c5c"/><stop offset="0.45" stop-color="#d9566a"/><stop offset="1" stop-color="#ffbf70"/></linearGradient>
+          </defs>
+          <rect width="1600" height="900" fill="url(#skyB)"/>
+          <circle cx="800" cy="520" r="190" fill="#ffe6a8"/>
+          <polygon points="0,640 220,420 380,560 560,360 780,600 1000,430 1220,590 1400,400 1600,560 1600,900 0,900" fill="#6a3b63"/>
+          <polygon points="0,740 260,560 460,700 700,540 960,730 1200,600 1420,720 1600,630 1600,900 0,900" fill="#3d2450"/>
+          <polygon points="0,830 300,720 620,810 960,740 1300,820 1600,760 1600,900 0,900" fill="#1f1530"/>
+          <text x="800" y="868" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="34" letter-spacing="10" fill="#ffd9b0">ATARDECER · TOMA 02</text>
+          <text x="60" y="880" font-family="Bricolage Grotesque, sans-serif" font-weight="700" font-size="170" fill="#ffffff" opacity="0.22">B</text>
+        </svg>
+      </div>
+      <div class="chip" id="dirChip">A → B</div>
+      <div class="name-chip" id="nameChip"></div>
+    </div>
+
+    <div class="transport">
+      <button class="btn-play" id="btnPlay" type="button">Reproducir</button>
+      <div class="ctl">
+        <label for="dur">Duración</label>
+        <input id="dur" type="range" min="0.3" max="2" step="0.1" value="0.8">
+        <span class="val" id="durVal">0.8 s</span>
+      </div>
+      <div class="ctl">
+        <label for="ease">Curva</label>
+        <select id="ease">
+          <option value="auto">Propia de cada transición</option>
+          <option value="lineal">Lineal</option>
+          <option value="suave">Suave (entrada y salida)</option>
+          <option value="entrada">Arranque lento</option>
+          <option value="salida">Frenado final</option>
+        </select>
+      </div>
+      <div class="ctl">
+        <input id="loop" type="checkbox">
+        <label for="loop">Repetir</label>
+      </div>
+    </div>
+
+    <div class="timeline">
+      <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Línea de tiempo de la transición">
+      <div class="readout"><span id="frameTxt">fotograma 00 / 24</span><span>30 fps · 1920×1080</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Transiciones</h2>
+      <p class="msg">Toca una para reproducirla. La estrella la agrega a tus favoritas.</p>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <section class="picks" aria-label="Favoritas">
+    <h2>Mis favoritas</h2>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <button class="btn-copy" id="btnCopy" type="button" disabled>Copiar lista</button>
+      <span class="msg" id="copyMsg" role="status"></span>
+    </div>
+    <textarea id="copybox" hidden readonly aria-label="Texto de la lista"></textarea>
+  </section>
+</div>
+
+<script>
+(function () {
+  var FPS = 30;
+  var E = {
+    lineal: function (t) { return t; },
+    suave: function (t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; },
+    cubica: function (t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; },
+    entrada: function (t) { return t * t * t; },
+    salida: function (t) { return 1 - Math.pow(1 - t, 3); },
+    expo: function (t) { return t === 0 ? 0 : t === 1 ? 1 : t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2; }
+  };
+  function rnd(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  function smooth(a, b, x) { var t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+  function setMask(el, v) {
+    el.style.webkitMaskImage = v; el.style.maskImage = v;
+    el.style.webkitMaskSize = '100% 12.5%'; el.style.maskSize = '100% 12.5%';
+    el.style.webkitMaskRepeat = 'repeat-y'; el.style.maskRepeat = 'repeat-y';
+  }
+
+  var TR = [
+    { id: 'fundido', name: 'Fundido cruzado', tag: 'Sutil', ease: 'suave',
+      desc: 'Una imagen se disuelve en la otra.',
+      use: 'Cambios de tema, entrevistas, pasos de un lugar a otro.',
+      render: function (t, p, f, b) { b.style.opacity = t; } },
+    { id: 'negro', name: 'Fundido a negro', tag: 'Sutil', ease: 'lineal',
+      desc: 'La imagen baja a negro y sube la siguiente.',
+      use: 'Cierre de segmento, paso del tiempo, final de video.',
+      render: function (t, p, f, b) {
+        if (t < 0.5) { f.style.opacity = 1 - t * 2; b.style.opacity = 0; }
+        else { f.style.opacity = 0; b.style.opacity = (t - 0.5) * 2; }
+      } },
+    { id: 'empuje', name: 'Empuje lateral', tag: 'Sutil', ease: 'cubica',
+      desc: 'La escena nueva empuja a la anterior hacia la izquierda.',
+      use: 'Pasos de un trámite, listas de servicios, secuencias.',
+      render: function (t, p, f, b) {
+        b.style.transform = 'translateX(' + ((1 - t) * 100) + '%)';
+        f.style.transform = 'translateX(' + (-t * 100) + '%)';
+      } },
+    { id: 'whip', name: 'Barrida rápida', tag: 'Dinámico', ease: 'expo',
+      desc: 'Empuje veloz con desenfoque de movimiento.',
+      use: 'Ritmo ágil para redes sociales y avances.',
+      render: function (t, p, f, b) {
+        var bl = Math.sin(Math.PI * p) * 14;
+        b.style.transform = 'translateX(' + ((1 - t) * 100) + '%)';
+        f.style.transform = 'translateX(' + (-t * 100) + '%)';
+        b.style.filter = f.style.filter = 'blur(' + bl.toFixed(2) + 'px)';
+      } },
+    { id: 'cortinilla', name: 'Cortinilla', tag: 'Sutil', ease: 'cubica',
+      desc: 'Una línea recta revela la escena nueva de izquierda a derecha.',
+      use: 'Antes y después, avance de obras, comparaciones.',
+      render: function (t, p, f, b) { b.style.clipPath = 'inset(0 ' + ((1 - t) * 100) + '% 0 0)'; } },
+    { id: 'iris', name: 'Iris circular', tag: 'Sutil', ease: 'cubica',
+      desc: 'Un círculo crece desde el centro y descubre la siguiente toma.',
+      use: 'Destacar a una persona o un lugar.',
+      render: function (t, p, f, b) { b.style.clipPath = 'circle(' + (t * 75) + '% at 50% 50%)'; } },
+    { id: 'persiana', name: 'Persiana', tag: 'Sutil', ease: 'suave',
+      desc: 'Ocho tiras horizontales se abren una sobre otra.',
+      use: 'Informes, gráficos y entrada de títulos.',
+      render: function (t, p, f, b) {
+        var v = (t * 100).toFixed(2) + '%';
+        setMask(b, 'linear-gradient(to bottom, #000 ' + v + ', transparent ' + v + ')');
+      } },
+    { id: 'zoom', name: 'Zoom a través', tag: 'Dinámico', ease: 'salida',
+      desc: 'Acercamiento que atraviesa la escena y aterriza en la siguiente.',
+      use: 'De una panorámica a un detalle.',
+      render: function (t, p, f, b) {
+        b.style.opacity = t;
+        b.style.transform = 'scale(' + (1.5 - 0.5 * t).toFixed(4) + ')';
+        f.style.transform = 'scale(' + (1 + t * 0.35).toFixed(4) + ')';
+      } },
+    { id: 'glitch', name: 'Glitch digital', tag: 'Llamativo', ease: 'lineal',
+      desc: 'Cortes con desplazamiento y cambios de color.',
+      use: 'Intros de tecnología. Úsala poco en piezas institucionales.',
+      render: function (t, p, f, b, fr) {
+        var k = Math.sin(Math.PI * p);
+        var showBack = rnd(fr + 3) < smooth(0.25, 0.75, p);
+        var tx = (rnd(fr + 1) - 0.5) * k * 10;
+        var hue = (rnd(fr + 8) - 0.5) * k * 120;
+        var fil = 'hue-rotate(' + hue.toFixed(1) + 'deg) saturate(' + (1 + k).toFixed(2) + ')';
+        b.style.opacity = showBack ? 1 : 0;
+        b.style.transform = f.style.transform = 'translateX(' + tx.toFixed(2) + '%)';
+        b.style.filter = f.style.filter = fil;
+        if (rnd(fr + 5) < k * 0.8) {
+          var a = rnd(fr + 6) * 80, h = 5 + rnd(fr + 7) * 20;
+          b.style.opacity = 1;
+          b.style.clipPath = 'inset(' + a.toFixed(1) + '% 0 ' + (100 - a - h).toFixed(1) + '% 0)';
+          b.style.transform = 'translateX(' + (-tx * 2).toFixed(2) + '%)';
+        }
+      } }
+  ];
+
+  var A = document.getElementById('sceneA'), B = document.getElementById('sceneB');
+  var layers = [A, B], names = ['A', 'B'];
+  var frontIdx = 0, cur = TR[0], playing = false, raf = 0, loopTimer = 0;
+  var dur = 0.8, easeKey = 'auto';
+
+  var elPlay = document.getElementById('btnPlay'), elDur = document.getElementById('dur'), elDurVal = document.getElementById('durVal');
+  var elEase = document.getElementById('ease'), elLoop = document.getElementById('loop'), elScrub = document.getElementById('scrub');
+  var elFrame = document.getElementById('frameTxt'), elDir = document.getElementById('dirChip'), elName = document.getElementById('nameChip');
+  var elGrid = document.getElementById('grid'), elChips = document.getElementById('chips');
+  var elCopy = document.getElementById('btnCopy'), elMsg = document.getElementById('copyMsg'), elBox = document.getElementById('copybox');
+
+  function total() { return Math.max(1, Math.round(dur * FPS)); }
+  function reset(el, z) { el.style.cssText = ''; el.style.zIndex = z; }
+
+  function frame(p) {
+    var ft = layers[frontIdx], bk = layers[1 - frontIdx];
+    reset(ft, 1); reset(bk, 2);
+    var easing = easeKey === 'auto' ? E[cur.ease] : E[easeKey];
+    cur.render(easing(p), p, ft, bk, Math.floor(p * total()));
+    var n = Math.round(p * total());
+    elFrame.textContent = 'fotograma ' + String(n).padStart(2, '0') + ' / ' + total();
+  }
+  function setProgress(p) { frame(p); elScrub.value = Math.round(p * 1000); }
+  function labels() {
+    elDir.textContent = names[frontIdx] + ' → ' + names[1 - frontIdx];
+    elName.textContent = cur.name;
+  }
+  function stopAll() { cancelAnimationFrame(raf); clearTimeout(loopTimer); playing = false; }
+  function swap() { frontIdx = 1 - frontIdx; labels(); setProgress(0); }
+
+  function play() {
+    stopAll();
+    playing = true;
+    var d = dur * 1000, t0 = performance.now();
+    function tick(now) {
+      var p = Math.min(1, (now - t0) / d);
+      setProgress(p);
+      if (p < 1) { raf = requestAnimationFrame(tick); }
+      else {
+        playing = false;
+        swap();
+        if (elLoop.checked) { loopTimer = setTimeout(play, 800); }
+      }
+    }
+    raf = requestAnimationFrame(tick);
+  }
+
+  function select(i) {
+    stopAll();
+    cur = TR[i];
+    labels();
+    var cards = elGrid.querySelectorAll('.card');
+    for (var k = 0; k < cards.length; k++) { cards[k].classList.toggle('on', k === i); }
+    setProgress(0);
+    play();
+  }
+
+  /* Rejilla */
+  var favs = {};
+  var star = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.5l6.1-.7z"/></svg>';
+  TR.forEach(function (t, i) {
+    var c = document.createElement('div');
+    c.className = 'card' + (i === 0 ? ' on' : '');
+    var pick = document.createElement('button');
+    pick.type = 'button'; pick.className = 'pick';
+    pick.innerHTML = '<span class="label">' + t.tag + '</span><span class="nm">' + t.name + '</span><span class="ds">' + t.desc + '</span><span class="us">Para: ' + t.use + '</span>';
+    pick.addEventListener('click', function () { select(i); });
+    var fav = document.createElement('button');
+    fav.type = 'button'; fav.className = 'fav'; fav.innerHTML = star;
+    fav.setAttribute('aria-pressed', 'false');
+    fav.setAttribute('aria-label', 'Marcar ' + t.name + ' como favorita');
+    fav.addEventListener('click', function () {
+      favs[t.id] = !favs[t.id];
+      fav.setAttribute('aria-pressed', favs[t.id] ? 'true' : 'false');
+      renderFavs();
+    });
+    c.appendChild(pick); c.appendChild(fav); elGrid.appendChild(c);
+  });
+
+  function favList() { return TR.filter(function (t) { return favs[t.id]; }); }
+  function renderFavs() {
+    var l = favList();
+    elChips.innerHTML = '';
+    if (!l.length) {
+      var e = document.createElement('span'); e.className = 'empty';
+      e.textContent = 'Aún no marcas ninguna. Toca la estrella de las transiciones que te gusten.';
+      elChips.appendChild(e);
+    } else {
+      l.forEach(function (t) { var s = document.createElement('span'); s.className = 'tag'; s.textContent = t.name; elChips.appendChild(s); });
+    }
+    elCopy.disabled = !l.length;
+    elMsg.textContent = '';
+    elBox.hidden = true;
+  }
+  function favText() {
+    return 'Me gustan estas transiciones: ' + favList().map(function (t) { return t.name; }).join(', ') + '. Duración: ' + dur.toFixed(1) + ' s a 30 fps.';
+  }
+  elCopy.addEventListener('click', function () {
+    var text = favText();
+    function fallback() {
+      elBox.hidden = false; elBox.value = text; elBox.focus(); elBox.select();
+      elMsg.textContent = 'Selecciona el texto y cópialo.';
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () {
+        elBox.hidden = true;
+        elMsg.textContent = 'Copiado. Pégalo en el chat con Claude.';
+      }, fallback);
+    } catch (err) { fallback(); }
+  });
+
+  /* Controles */
+  elPlay.addEventListener('click', function () { setProgress(0); play(); });
+  elDur.addEventListener('input', function () {
+    dur = parseFloat(elDur.value);
+    elDurVal.textContent = dur.toFixed(1) + ' s';
+    if (!playing) { frame(elScrub.value / 1000); }
+  });
+  elEase.addEventListener('change', function () { easeKey = elEase.value; if (!playing) { frame(elScrub.value / 1000); } });
+  elLoop.addEventListener('change', function () { if (!elLoop.checked) { clearTimeout(loopTimer); } });
+  elScrub.addEventListener('input', function () { stopAll(); frame(elScrub.value / 1000); });
+  elScrub.addEventListener('change', function () { if (parseInt(elScrub.value, 10) >= 1000) { swap(); } });
+
+  labels();
+  renderFavs();
+  setProgress(0);
+})();
+</script>
+
+</body></html>

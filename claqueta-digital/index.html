@@ -1,0 +1,188 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Claqueta Digital</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Permanent+Marker&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: one-screen film slate — striped clapper sticks on top, acrylic board with chalk fields, red LED timecode, control strip at the bottom. Deliberately single dark look: a slate is black in any theme. */
+:root{
+  --board:#0d0d0e; --chalk:#f4f1ea; --chalk-dim:#a9a49b; --rule:#3b3a38; --led:#ff3b2f; --ctrl:#1b1b1c; --ctrl-line:#333;
+  --print:"Oswald", "Arial Narrow", Arial, sans-serif;
+  --hand:"Permanent Marker", "Comic Sans MS", cursive;
+  --seg:"Share Tech Mono", ui-monospace, Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:#050505;color:var(--chalk);font-family:var(--print);margin:0;
+  padding-left:max(12px, env(safe-area-inset-left, 0px));padding-right:max(12px, env(safe-area-inset-right, 0px));padding-block:10px;
+  display:flex;flex-direction:column;gap:10px;overflow-x:hidden}
+.slate{flex:1;min-height:0;display:flex;flex-direction:column;max-width:1100px;width:100%;margin:0 auto}
+.sticks{position:relative;height:clamp(46px,9vh,80px);flex:none}
+.stick{position:absolute;left:0;right:0;height:50%;border-radius:4px;
+  background:repeating-linear-gradient(-55deg,#f4f1ea 0 26px,#111 26px 52px);border:2px solid #111}
+.stick.top{top:0;transform-origin:2% 100%;transform:rotate(-14deg);transition:transform .32s cubic-bezier(.2,.9,.3,1.2)}
+.stick.top.shut{transform:rotate(0deg);transition:transform .07s ease-in}
+.stick.bottom{bottom:0}
+.hinge{position:absolute;left:1%;top:50%;width:16px;height:16px;border-radius:50%;background:#bdbab3;border:3px solid #222;transform:translate(-30%,-50%)}
+.board{flex:1;min-height:0;background:var(--board);border:2px solid #222;border-radius:0 0 10px 10px;padding:clamp(10px,2vh,18px);
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto 1fr auto auto;gap:0;position:relative}
+.cell{border:1.5px solid var(--rule);padding:6px 10px;display:flex;flex-direction:column;min-width:0}
+.cell label{font-size:clamp(10px,1.6vh,13px);letter-spacing:.14em;color:var(--chalk-dim);text-transform:uppercase;font-weight:600}
+.cell input{background:transparent;border:none;color:var(--chalk);font-family:var(--hand);width:100%;min-width:0;padding:0;font-size:clamp(16px,3.2vh,30px);line-height:1.2}
+.cell input:focus-visible{outline:2px dashed var(--chalk-dim);outline-offset:2px}
+.prod{grid-column:1/4;grid-row:1}.roll{grid-column:4/5;grid-row:1}
+.big{grid-row:2}.big input{font-size:clamp(40px,13vh,130px);line-height:1;text-align:center}
+.scene{grid-column:1/3}.take{grid-column:3/5}
+.dir{grid-column:1/3;grid-row:3}.cam{grid-column:3/4;grid-row:3}.date{grid-column:4/5;grid-row:3}
+.tags{grid-column:1/5;grid-row:4;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 clamp(12px,2vh,16px)/1 var(--print);letter-spacing:.1em;padding:6px 10px;border-radius:5px;border:1.5px solid var(--rule);background:transparent;color:var(--chalk-dim);cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--chalk);color:var(--chalk);background:#1d1c1a}
+.tc{font-family:var(--seg);color:var(--led);font-size:clamp(28px,7vh,64px);letter-spacing:.04em;text-shadow:0 0 12px rgba(255,59,47,.55);font-variant-numeric:tabular-nums;line-height:1}
+.tc small{font-size:.32em;color:#a3332b;letter-spacing:.12em;margin-left:6px;text-shadow:none}
+.cola{position:absolute;inset:auto 14px 50% auto;transform:translateY(50%) rotate(-8deg);font:700 clamp(18px,4vh,34px)/1 var(--print);letter-spacing:.2em;color:var(--led);border:3px solid var(--led);padding:4px 10px;border-radius:6px;pointer-events:none}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20}
+.flash.on{opacity:1}
+.ctrl{flex:none;max-width:1100px;width:100%;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.grp{display:flex;align-items:center;gap:6px;background:var(--ctrl);border:1px solid var(--ctrl-line);border-radius:10px;padding:5px}
+.grp span{font-size:11px;letter-spacing:.14em;color:var(--chalk-dim);padding:0 4px}
+.b{font:600 15px/1 var(--print);letter-spacing:.06em;min-width:40px;height:40px;padding:0 12px;border-radius:7px;border:1px solid var(--ctrl-line);background:#262626;color:var(--chalk);cursor:pointer}
+.b[aria-pressed="true"]{background:var(--chalk);color:#111}
+.clap{font:700 clamp(18px,2.6vh,22px)/1 var(--print);letter-spacing:.14em;height:52px;padding:0 26px;border-radius:10px;border:none;background:var(--led);color:#160302;cursor:pointer;flex:1 1 180px;max-width:340px}
+.clap:active{transform:translateY(1px)}
+button:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
+select.b{appearance:none;padding:0 10px}
+@media (max-width:560px){
+  .board{grid-template-rows:auto auto 1fr auto auto}
+  .prod{grid-column:1/5;grid-row:1}.roll{grid-column:1/3;grid-row:2}.date{grid-column:3/5;grid-row:2}
+  .scene{grid-row:3}.take{grid-row:3}
+  .dir{grid-column:1/3;grid-row:4}.cam{grid-column:3/5;grid-row:4}
+  .tags{grid-row:5}
+}
+@media (prefers-reduced-motion:reduce){.stick.top,.stick.top.shut{transition:none}}
+</style>
+
+<div class="flash" id="flash" aria-hidden="true"></div>
+
+<main class="slate">
+  <div class="sticks" aria-hidden="true"><div class="stick bottom"></div><div class="stick top" id="top"></div><div class="hinge"></div></div>
+  <div class="board">
+    <div class="cell prod"><label for="f-prod">Producción</label><input id="f-prod" value="Cápsula institucional"></div>
+    <div class="cell roll"><label for="f-roll">Rollo</label><input id="f-roll" value="A001"></div>
+    <div class="cell big scene"><label for="f-scene">Escena</label><input id="f-scene" value="3" inputmode="text"></div>
+    <div class="cell big take"><label for="f-take">Toma</label><input id="f-take" value="1" inputmode="numeric"></div>
+    <div class="cell dir"><label for="f-dir">Director</label><input id="f-dir" value="Adán"></div>
+    <div class="cell cam"><label for="f-cam">Cámara</label><input id="f-cam" value="A"></div>
+    <div class="cell date"><label for="f-date">Fecha</label><input id="f-date"></div>
+    <div class="cell tags">
+      <div class="chips" role="group" aria-label="Datos de la toma">
+        <button class="chip" type="button" data-k="ie" data-v="INT">INT</button><button class="chip" type="button" data-k="ie" data-v="EXT">EXT</button>
+        <button class="chip" type="button" data-k="dn" data-v="DÍA">DÍA</button><button class="chip" type="button" data-k="dn" data-v="NOCHE">NOCHE</button>
+        <button class="chip" type="button" data-k="snd" data-v="SYNC">SYNC</button><button class="chip" type="button" data-k="snd" data-v="MOS">MOS</button>
+      </div>
+      <div class="tc" id="tc" aria-label="Código de tiempo">00:00:00:00<small id="fpsl">24 FPS</small></div>
+    </div>
+    <div class="cola" id="cola" hidden>COLA</div>
+  </div>
+</main>
+
+<div class="ctrl">
+  <div class="grp"><span>ESC</span><button class="b" type="button" id="sMinus" aria-label="Escena anterior">−</button><button class="b" type="button" id="sPlus" aria-label="Escena siguiente">+</button></div>
+  <div class="grp"><span>TOMA</span><button class="b" type="button" id="tMinus" aria-label="Toma anterior">−</button><button class="b" type="button" id="tPlus" aria-label="Toma siguiente">+</button></div>
+  <button class="clap" type="button" id="clap">CLAC</button>
+  <div class="grp">
+    <select class="b" id="fps" aria-label="Cuadros por segundo"><option>23.976</option><option selected>24</option><option>25</option><option>29.97</option><option>30</option><option>60</option></select>
+    <button class="b" type="button" id="tail" aria-pressed="false" title="Claqueta de cola (al final de la toma)">COLA</button>
+    <button class="b" type="button" id="auto" aria-pressed="true" title="Sube la toma después de cada claqueta">AUTO+1</button>
+    <button class="b" type="button" id="snd" aria-pressed="true" title="Tono de sincronía">BEEP</button>
+    <button class="b" type="button" id="fs" title="Pantalla completa">⛶</button>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const FIELDS = ["prod","roll","scene","take","dir","cam","date"];
+const today = new Date(); const pad = n => String(n).padStart(2,"0");
+$("f-date").value = `${pad(today.getDate())}/${pad(today.getMonth()+1)}/${today.getFullYear()}`;
+let tags = {ie:"EXT", dn:"DÍA", snd:"SYNC"}, opts = {fps:"24", tail:false, auto:true, beep:true};
+
+// recuerda los datos en este navegador
+try{ const s = JSON.parse(localStorage.getItem("claqueta-v1")||"null");
+  if(s){ FIELDS.forEach(k=>{ if(k!=="date" && s.f && s.f[k]!=null) $("f-"+k).value = s.f[k]; }); if(s.tags) tags = s.tags; if(s.opts) opts = Object.assign(opts, s.opts); } }catch(e){}
+function save(){ try{ const f={}; FIELDS.forEach(k=>f[k]=$("f-"+k).value); localStorage.setItem("claqueta-v1", JSON.stringify({f,tags,opts})); }catch(e){} }
+FIELDS.forEach(k=>$("f-"+k).addEventListener("input", save));
+
+function syncUI(){
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", String(tags[c.dataset.k]===c.dataset.v)));
+  $("tail").setAttribute("aria-pressed", String(opts.tail)); $("auto").setAttribute("aria-pressed", String(opts.auto)); $("snd").setAttribute("aria-pressed", String(opts.beep));
+  $("cola").hidden = !opts.tail; $("fps").value = opts.fps; $("fpsl").textContent = opts.fps+" FPS";
+  $("top").style.transform = ""; // usa el CSS
+}
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{ tags[c.dataset.k]=c.dataset.v; syncUI(); save(); }));
+$("tail").addEventListener("click",()=>{ opts.tail=!opts.tail; syncUI(); save(); });
+$("auto").addEventListener("click",()=>{ opts.auto=!opts.auto; syncUI(); save(); });
+$("snd").addEventListener("click",()=>{ opts.beep=!opts.beep; syncUI(); save(); });
+$("fps").addEventListener("change",e=>{ opts.fps=e.target.value; syncUI(); save(); });
+
+// escena: sube número o letra final (3 → 4, 3A → 3B)
+function bumpScene(d){ const el=$("f-scene"); const v=el.value.trim(); const m=v.match(/^(.*?)(\d+)([A-Za-z]?)$/);
+  if(m && m[3]){ const code=m[3].toUpperCase().charCodeAt(0)+d; el.value = m[1]+m[2]+(code>=65&&code<=90?String.fromCharCode(code):""); }
+  else if(m){ el.value = m[1]+Math.max(1, +m[2]+d); }
+  else if(/^[A-Za-z]$/.test(v)){ el.value = String.fromCharCode(Math.max(65, v.toUpperCase().charCodeAt(0)+d)); }
+  save(); }
+function bumpTake(d){ const el=$("f-take"); const n=parseInt(el.value,10)||0; el.value = Math.max(1, n+d); save(); }
+$("sPlus").addEventListener("click",()=>{ bumpScene(1); $("f-take").value=1; save(); });
+$("sMinus").addEventListener("click",()=>bumpScene(-1));
+$("tPlus").addEventListener("click",()=>bumpTake(1));
+$("tMinus").addEventListener("click",()=>bumpTake(-1));
+
+// código de tiempo con la hora del día
+function tick(){
+  const fps = parseFloat(opts.fps), nom = Math.round(fps), now = new Date();
+  const fr = Math.floor(now.getMilliseconds()/1000*nom);
+  $("tc").firstChild.nodeValue = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}${(fps%1)?";":":"}${pad(fr)}`;
+  requestAnimationFrame(tick);
+}
+
+// tono de sincronía
+let ac = null;
+function beep(){ try{ ac = ac || new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") ac.resume();
+  const o=ac.createOscillator(), g=ac.createGain(); o.type="sine"; o.frequency.value=1000; g.gain.setValueAtTime(0.0001,ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.7,ac.currentTime+0.005); g.gain.setValueAtTime(0.7,ac.currentTime+0.09); g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+0.12);
+  o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+0.13); }catch(e){} }
+
+let busy=false;
+$("clap").addEventListener("click",()=>{
+  if(busy) return; busy=true;
+  const top=$("top"); top.classList.add("shut");
+  setTimeout(()=>{ // instante del golpe
+    if(opts.beep) beep();
+    const f=$("flash"); f.classList.add("on"); setTimeout(()=>f.classList.remove("on"), 84);
+    if(navigator.vibrate) try{ navigator.vibrate(40); }catch(e){}
+  }, 70);
+  setTimeout(()=>{ top.classList.remove("shut"); }, 700);
+  setTimeout(()=>{ if(opts.auto && !opts.tail) bumpTake(1); busy=false; }, 1300);
+});
+
+// pantalla completa y pantalla encendida
+$("fs").addEventListener("click", async ()=>{ try{ if(document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }catch(e){} });
+async function wake(){ try{ if("wakeLock" in navigator && document.visibilityState==="visible") await navigator.wakeLock.request("screen"); }catch(e){} }
+document.addEventListener("visibilitychange", wake); wake();
+
+syncUI(); tick();
+})();
+</script>
+
+</body></html>
