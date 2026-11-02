@@ -83,6 +83,11 @@ td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 [hidden]{display:none!important}
+.lplayer{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.lplayer.vert{aspect-ratio:9/16;max-width:360px}
+.lplayer iframe,.lplayer #lp,.lplayer .fb-video,.lplayer .fb-video span{position:absolute;inset:0;width:100%!important;height:100%!important}
+.tin{width:96px!important;font-family:var(--mono)!important;text-align:center}
+#lmsg a{color:var(--accent-ink)}
 .recbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--soft);border:1px solid var(--accent)}
 .recbar .dot{width:12px;height:12px;border-radius:50%;background:var(--bad)}
 @media (prefers-reduced-motion:no-preference){.recbar .dot{animation:blink 1s steps(2) infinite}@keyframes blink{50%{opacity:.2}}}
@@ -136,6 +141,22 @@ table{min-width:640px}
 <header class="hd"><span class="eyebrow">Kit de producción</span><h1>Analizador de Referencias</h1><p class="sub">Graba en tu pantalla un video que te inspire, marca el segmento y obtén un análisis de cámara, luz, color, motion graphics, efectos y transiciones, con prompts listos para copiar.</p></header>
 
 <div class="steps"><span><b>1</b> Graba la pantalla <small id="recHint">Mac: Cmd + Shift + 5 · celular: grabación de pantalla</small></span><span><b>2</b> Suelta el video aquí y marca entrada y salida</span><span><b>3</b> Analiza con Claude</span></div>
+
+<div class="card" id="linkCard">
+  <div class="row" style="justify-content:space-between"><h2>Desde una liga de YouTube o Facebook</h2><span class="note">o graba tu pantalla abajo</span></div>
+  <div class="row"><input type="url" id="lurl" placeholder="https://www.youtube.com/watch?v=…  ·  https://www.facebook.com/…/videos/…" style="flex:1 1 280px" aria-label="Liga del video"><button class="btn sm" type="button" id="lgo">Cargar</button></div>
+  <p class="note" id="lmsg">Pega la liga, marca entrada y salida, y captura el segmento: se graba esa parte de la pantalla y pasa al analizador.</p>
+  <div id="lpanel" hidden>
+    <div class="lplayer" id="lplayer"><div id="lslot"></div></div>
+    <div class="row">
+      <button class="btn ghost sm" type="button" id="lin">Entrada aquí</button><input type="text" id="linT" class="tin" value="00:00.0" aria-label="Entrada">
+      <button class="btn ghost sm" type="button" id="lout">Salida aquí</button><input type="text" id="loutT" class="tin" value="00:10.0" aria-label="Salida">
+      <button class="btn ghost sm" type="button" id="lplay">Ver segmento</button>
+      <button class="btn sm" type="button" id="lcap">● Capturar segmento</button>
+    </div>
+    <p class="note" id="lnote">Al capturar, el navegador pregunta qué compartir: elige <b>esta pestaña</b> y no muevas la página hasta que termine. Si sale un anuncio, espera a que acabe antes de capturar.</p>
+  </div>
+</div>
 
 <div class="grid wide">
   <div class="card">
@@ -242,13 +263,14 @@ function saveST(){ ST.focus=$$("#focus input").filter(c=>c.checked).map(c=>c.dat
 ["gear","nf","lang"].forEach(k=>$("#"+k).addEventListener("change",saveST)); $("#focus").addEventListener("change",saveST);
 
 const v=$("#v"), probe=document.createElement("video"); probe.muted=true; probe.playsInline=true; probe.preload="auto";
+let crop=null, srcLink="";
 let dur=0, inT=0, outT=0, cuts=[], grads=[], frames=[], job=0, fname="", analysis=null, isExample=true;
 const esc=t=>String(t??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const tc=s=>{ s=Math.max(0,s||0); const m=Math.floor(s/60), x=s-m*60; return String(m).padStart(2,"0")+":"+x.toFixed(2).padStart(5,"0"); };
 const tcs=s=>{ s=Math.max(0,s||0); const m=Math.floor(s/60), x=s-m*60; return String(m).padStart(2,"0")+":"+x.toFixed(1).padStart(4,"0"); };
 
 // ---------- carga ----------
-function setFile(f){ if(!f) return; if(!f.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(f.name)){ toast("Ese archivo no parece un video"); return; }
+function setFile(f,o){ if(!f) return; crop=(o&&o.crop)||null; srcLink=(o&&o.link)||""; if(!f.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(f.name)){ toast("Ese archivo no parece un video"); return; }
   const url=URL.createObjectURL(f); fname=f.name; v.src=url; probe.src=url; v.hidden=false; $("#empty").hidden=true; $("#aiMsg").textContent="Cargando video…"; }
 $("#file").addEventListener("change",e=>setFile(e.target.files[0]));
 const drop=$("#drop"); ["dragover","dragenter"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add("over"); }));
@@ -289,13 +311,14 @@ let scanT=0; function queueScan(){ clearTimeout(scanT); scanT=setTimeout(scan,50
 function seekP(t){ return new Promise(res=>{ let done=false; const h=()=>{ if(done) return; done=true; probe.removeEventListener("seeked",h); res(); }; probe.addEventListener("seeked",h); probe.currentTime=Math.max(0,Math.min(dur-0.04,t)); setTimeout(h,2500); }); }
 async function ready(){ if(probe.readyState<2) await new Promise(r=>{ probe.addEventListener("loadeddata",r,{once:true}); setTimeout(r,4000); });
   if(!isFinite(probe.duration)) await new Promise(r=>{ const h=()=>{ if(isFinite(probe.duration)){ probe.removeEventListener("durationchange",h); r(); } }; probe.addEventListener("durationchange",h); probe.currentTime=1e101; setTimeout(r,4000); }); }
-async function grab(t,w){ await seekP(t); const c=document.createElement("canvas"), r=(probe.videoHeight/probe.videoWidth)||0.5625; c.width=w; c.height=Math.round(w*r); c.getContext("2d").drawImage(probe,0,0,c.width,c.height); return c; }
+function srcRect(){ const vw=probe.videoWidth||16, vh=probe.videoHeight||9; return crop? [crop.x*vw,crop.y*vh,crop.w*vw,crop.h*vh] : [0,0,vw,vh]; }
+async function grab(t,w){ await seekP(t); const R=srcRect(), c=document.createElement("canvas"), r=(R[3]/R[2])||0.5625; c.width=w; c.height=Math.round(w*r); c.getContext("2d").drawImage(probe,R[0],R[1],R[2],R[3],0,0,c.width,c.height); return c; }
 async function scan(){
   const tok=++job, D=outT-inT; if(!dur||D<0.2) return; await ready(); if(tok!==job) return;
   $("#scanMsg").textContent="Revisando el segmento…"; $("#sheet").disabled=$("#copyPrompt").disabled=true;
   const stp=Math.max(1/8, D/220), W=48, H=27, sm=document.createElement("canvas"); sm.width=W; sm.height=H; const sx=sm.getContext("2d",{willReadFrequently:true});
   let prev=null; const ds=[];
-  for(let t=inT; t<=outT+1e-6; t+=stp){ if(tok!==job) return; await seekP(t); sx.drawImage(probe,0,0,W,H); const d=sx.getImageData(0,0,W,H).data;
+  for(let t=inT; t<=outT+1e-6; t+=stp){ if(tok!==job) return; await seekP(t); const R=srcRect(); sx.drawImage(probe,R[0],R[1],R[2],R[3],0,0,W,H); const d=sx.getImageData(0,0,W,H).data;
     if(prev){ let s=0; for(let i=0;i<d.length;i+=4) s+=Math.abs(d[i]-prev[i])+Math.abs(d[i+1]-prev[i+1])+Math.abs(d[i+2]-prev[i+2]); ds.push({t,d:s/(W*H*3*255)}); }
     prev=d.slice(); $("#scanMsg").textContent=`Revisando el segmento… ${Math.round((t-inT)/D*100)} %`; }
   const sorted=ds.map(x=>x.d).sort((a,b)=>a-b), med=sorted[Math.floor(sorted.length/2)]||0;
@@ -385,7 +408,7 @@ function render(a,title){
   $$("#res .cp").forEach(b=>b.addEventListener("click",()=>copyText(b.dataset.t)));
   $$("#res .sw").forEach(b=>b.addEventListener("click",()=>copyText(b.dataset.hex)));
 }
-function toMd(a,title){ let m=`# ${title}\n\n`; if(a.resumen) m+=a.resumen+"\n\n";
+function toMd(a,title){ let m=`# ${title}\n\n`+(srcLink? `Fuente: ${srcLink}\n\n`:""); if(a.resumen) m+=a.resumen+"\n\n";
   if(arr(a.planos).length){ m+="## Planos y cámara\n\n| Tiempo | Plano | Ángulo | Movimiento | Lente | Composición |\n|---|---|---|---|---|---|\n"+arr(a.planos).map(p=>`| ${[p.tiempo,p.plano,p.angulo,p.movimiento,p.lente,p.composicion].map(x=>String(x||"").replace(/\|/g,"/")).join(" | ")} |`).join("\n")+"\n\n"; }
   const L=a.iluminacion||{}; if(Object.values(L).some(Boolean)) m+=`## Iluminación\n\n- Esquema: ${L.esquema||""}\n- Dirección: ${L.direccion||""}\n- Calidad: ${L.calidad||""}\n- Temperatura: ${L.temperatura||""}\n- Cómo: ${L.como_replicarlo||""}\n\n`;
   const C=a.color||{}; if(C.look||arr(C.paleta).length) m+=`## Color\n\n- Paleta: ${arr(C.paleta).join(", ")}\n- Look: ${C.look||""}\n- Contraste: ${C.contraste||""}\n- Cómo: ${C.como_replicarlo||""}\n\n`;
@@ -426,6 +449,68 @@ $("#rec").addEventListener("click",e=>{ e.stopPropagation(); startRec(); });
 $("#recNew").addEventListener("click",()=>startRec());
 $("#recStop").addEventListener("click",()=>{ if(mr&&mr.state!=="inactive") mr.stop(); });
 $("#recSave").addEventListener("click",()=>{ if(lastRec) saveFile(lastRec.name,lastRec); });
+
+// ---------- ligas de YouTube y Facebook ----------
+const KIT_URL="https://adanmartinezgalvez-ui.github.io/kit-produccion/analizador-de-referencias/";
+const framed=window.self!==window.top;
+if(framed){ $("#lmsg").innerHTML=`Dentro de Claude no se pueden reproducir videos de otros sitios. Para usar ligas, abre la <a href="${KIT_URL}" target="_blank" rel="noopener">versión del Kit en GitHub</a>.`; $("#lurl").disabled=true; $("#lgo").disabled=true; }
+let L=null, lIn=0, lOut=10, lLoop=false, lTick=0, lUrl="";
+const pt=t=>{ t=String(t).trim(); if(!t) return NaN; const p=t.split(":").map(Number); return p.some(isNaN)? NaN : p.reduce((a,b)=>a*60+b,0); };
+function parseLink(u){ let url; try{ url=new URL(u.trim()); }catch(_){ return null; } const h=url.hostname.replace(/^www\.|^m\./,"");
+  const st=pt((url.searchParams.get("t")||url.searchParams.get("start")||"").replace(/s$/,""));
+  if(h==="youtu.be") return {k:"yt",id:url.pathname.slice(1).split("/")[0],st,vert:false};
+  if(h.endsWith("youtube.com")||h==="youtube-nocookie.com"){ let id=url.searchParams.get("v"), m=url.pathname.match(/^\/(shorts|embed|live)\/([^/?]+)/); if(m) id=m[2]; return id? {k:"yt",id,st,vert:!!(m&&m[1]==="shorts")} : null; }
+  if(h.endsWith("facebook.com")||h==="fb.watch") return {k:"fb",href:url.href,vert:/\/reel\//.test(url.pathname)};
+  return null; }
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement("script"); s.src=src; s.async=true; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+let ytReady=null; function yt(){ if(!ytReady) ytReady=new Promise((res,rej)=>{ if(window.YT&&window.YT.Player) return res(); window.onYouTubeIframeAPIReady=res; loadScript("https://www.youtube.com/iframe_api").catch(rej); setTimeout(()=>rej(new Error("timeout")),15000); }); return ytReady; }
+let fbReady=null, fbWait=null; function fb(){ if(!fbReady) fbReady=new Promise((res,rej)=>{ if(!$("#fb-root")){ const d=document.createElement("div"); d.id="fb-root"; document.body.prepend(d); }
+  window.fbAsyncInit=()=>{ FB.init({xfbml:false,version:"v19.0"}); FB.Event.subscribe("xfbml.ready",m=>{ if(m.type==="video"&&fbWait){ fbWait(m.instance); fbWait=null; } }); res(); };
+  loadScript("https://connect.facebook.net/es_LA/sdk.js").catch(rej); setTimeout(()=>rej(new Error("timeout")),15000); }); return fbReady; }
+function lShow(){ $("#linT").value=tcs(lIn); $("#loutT").value=tcs(lOut); }
+$("#lgo").addEventListener("click",async()=>{
+  const p=parseLink($("#lurl").value); if(!p){ $("#lmsg").textContent="No reconozco esa liga. Usa una de YouTube (watch, youtu.be o shorts) o de un video de Facebook."; return; }
+  lUrl=$("#lurl").value.trim(); $("#lpanel").hidden=false; $("#lplayer").classList.toggle("vert",!!p.vert); $("#lslot").innerHTML='<div id="lp"></div>'; L=null; lLoop=false;
+  $("#lmsg").textContent="Cargando el reproductor…";
+  try{
+    if(p.k==="yt"){ await yt(); await new Promise((res,rej)=>{ const pl=new YT.Player("lp",{videoId:p.id,width:"100%",height:"100%",playerVars:{start:isNaN(p.st)?0:Math.floor(p.st),rel:0,playsinline:1,modestbranding:1},events:{onReady:()=>res(pl),onError:e=>rej(e)}}); })
+      .then(pl=>{ L={src:"YouTube "+p.id, play:()=>pl.playVideo(), pause:()=>pl.pauseVideo(), seek:t=>pl.seekTo(t,true), time:()=>pl.getCurrentTime()||0, dur:()=>pl.getDuration()||0}; }); }
+    else { await fb(); $("#lp").outerHTML=`<div class="fb-video" data-href="${p.href.replace(/"/g,"&quot;")}" data-width="auto" data-show-text="false" data-allowfullscreen="false"></div>`;
+      const inst=await new Promise((res,rej)=>{ fbWait=res; FB.XFBML.parse($("#lslot")); setTimeout(()=>rej(new Error("fb")),15000); });
+      L={src:"Facebook", play:()=>inst.play(), pause:()=>inst.pause(), seek:t=>inst.seek(t), time:()=>inst.getCurrentPosition()||0, dur:()=>inst.getDuration()||0}; }
+    lIn=isNaN(p.st)?0:p.st; lOut=lIn+10; lShow(); $("#lmsg").textContent="Reproduce, marca entrada y salida, y captura el segmento.";
+  }catch(e){ $("#lpanel").hidden=true; L=null; $("#lmsg").textContent= p.k==="fb"? "No se pudo cargar el video de Facebook. Revisa que sea público o que tu navegador no esté bloqueando el reproductor de Facebook." : "No se pudo cargar el video. Revisa la liga o que el video permita insertarse en otros sitios."; }
+});
+$("#lurl").addEventListener("keydown",e=>{ if(e.key==="Enter") $("#lgo").click(); });
+const needL=()=>{ if(!L){ toast("Primero carga una liga"); return false; } return true; };
+$("#lin").addEventListener("click",()=>{ if(!needL()) return; lIn=L.time(); if(lOut<=lIn+0.3) lOut=lIn+10; lShow(); });
+$("#lout").addEventListener("click",()=>{ if(!needL()) return; lOut=L.time(); if(lOut<=lIn+0.3) lIn=Math.max(0,lOut-10); lShow(); });
+$("#linT").addEventListener("change",()=>{ const t=pt($("#linT").value); if(!isNaN(t)) lIn=t; lShow(); });
+$("#loutT").addEventListener("change",()=>{ const t=pt($("#loutT").value); if(!isNaN(t)&&t>lIn) lOut=t; lShow(); });
+$("#lplay").addEventListener("click",()=>{ if(!needL()) return; lLoop=!lLoop; $("#lplay").textContent=lLoop?"Detener":"Ver segmento"; if(lLoop){ L.seek(lIn); L.play(); } else L.pause(); });
+clearInterval(lTick); lTick=setInterval(()=>{ if(L&&lLoop&&L.time()>=lOut){ L.seek(lIn); } },150);
+$("#lcap").addEventListener("click",async()=>{
+  if(!needL()) return; if(lOut-lIn<0.5){ toast("El segmento es muy corto"); return; } if(lOut-lIn>180){ toast("Captura segmentos de 3 minutos o menos"); return; }
+  if(!canRec){ toast("Este navegador no permite capturar la pantalla"); return; }
+  lLoop=false; $("#lplay").textContent="Ver segmento"; L.pause(); L.seek(lIn);
+  let s; try{ s=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30,displaySurface:"browser"},audio:true,preferCurrentTab:true,selfBrowserSurface:"include"}); }
+  catch(e){ toast(e&&e.name==="NotAllowedError"?"Captura cancelada":"No se pudo capturar la pantalla"); return; }
+  const track=s.getVideoTracks()[0]; let cr=null, cropped=false;
+  try{ if(window.CropTarget&&track&&track.cropTo){ await track.cropTo(await CropTarget.fromElement($("#lplayer"))); cropped=true; } }catch(_){}
+  if(!cropped){ const r=$("#lplayer").getBoundingClientRect(), W=innerWidth, H=innerHeight; cr={x:Math.max(0,r.left/W),y:Math.max(0,r.top/H),w:Math.min(1,r.width/W),h:Math.min(1,r.height/H)}; }
+  const mime=["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm"].find(t=>{ try{ return MediaRecorder.isTypeSupported(t); }catch(_){ return false; } })||"";
+  let rec; try{ rec=new MediaRecorder(s, mime?{mimeType:mime,videoBitsPerSecond:10000000}:{}); }catch(_){ rec=new MediaRecorder(s); }
+  const chunks=[]; rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+  $("#lcap").disabled=true; $("#lcap").textContent="Capturando…";
+  await new Promise(r=>setTimeout(r,700)); rec.start(500); L.play();
+  const stop=()=>{ clearInterval(iv); if(rec.state!=="inactive") rec.stop(); };
+  const iv=setInterval(()=>{ if(L.time()>=lOut-0.04) stop(); },40); if(track) track.addEventListener("ended",stop);
+  rec.onstop=()=>{ L.pause(); s.getTracks().forEach(t=>t.stop()); $("#lcap").disabled=false; $("#lcap").textContent="● Capturar segmento";
+    const type=(rec.mimeType||"video/webm").split(";")[0], ext=type.includes("mp4")?"mp4":"webm";
+    const f=new File([new Blob(chunks,{type})], `${slug(L.src)}-${tcs(lIn).replace(/[:.]/g,"")}.${ext}`, {type});
+    lastRec=f; $("#recSaveRow").hidden=false; setFile(f,{crop:cr, link:lUrl+(lUrl.includes("youtu")?` (desde ${tcs(lIn)})`:"")});
+    toast("Segmento capturado: ya está en el analizador"); $("#drop").scrollIntoView({behavior:"smooth",block:"start"}); };
+});
 
 // ---------- pegar respuesta de un chat ----------
 function parseLoose(t){ t=String(t||"").trim(); try{ return JSON.parse(t); }catch(_){}
