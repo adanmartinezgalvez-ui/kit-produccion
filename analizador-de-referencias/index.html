@@ -175,6 +175,7 @@ table{min-width:640px}
       <button class="btn ghost sm" type="button" id="bIn">Entrada (I)</button>
       <button class="btn ghost sm" type="button" id="bOut">Salida (O)</button>
       <label class="check"><input type="checkbox" id="loop" checked> Repetir segmento</label>
+      <button class="btn ghost sm" type="button" id="other" hidden>Cargar otro video</button>
       <div class="seg2" id="spd"><button type="button" data-v="0.25">¼×</button><button type="button" data-v="0.5">½×</button><button type="button" data-v="1">1×</button></div>
     </div>
   </div>
@@ -271,7 +272,7 @@ const tcs=s=>{ s=Math.max(0,s||0); const m=Math.floor(s/60), x=s-m*60; return St
 
 // ---------- carga ----------
 function setFile(f,o){ if(!f) return; crop=(o&&o.crop)||null; srcLink=(o&&o.link)||""; if(!f.type.startsWith("video/") && !/\.(mp4|mov|m4v|webm)$/i.test(f.name)){ toast("Ese archivo no parece un video"); return; }
-  const url=URL.createObjectURL(f); fname=f.name; v.src=url; probe.src=url; v.hidden=false; $("#empty").hidden=true; $("#aiMsg").textContent="Cargando video…"; }
+  const url=URL.createObjectURL(f); fname=f.name; v.src=url; probe.src=url; v.hidden=false; $("#empty").hidden=true; $("#other").hidden=false; $("#aiMsg").textContent="Cargando video…"; }
 $("#file").addEventListener("change",e=>setFile(e.target.files[0]));
 const drop=$("#drop"); ["dragover","dragenter"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{ e.preventDefault(); drop.classList.remove("over"); if(t==="drop"&&e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }));
@@ -449,6 +450,15 @@ $("#rec").addEventListener("click",e=>{ e.stopPropagation(); startRec(); });
 $("#recNew").addEventListener("click",()=>startRec());
 $("#recStop").addEventListener("click",()=>{ if(mr&&mr.state!=="inactive") mr.stop(); });
 $("#recSave").addEventListener("click",()=>{ if(lastRec) saveFile(lastRec.name,lastRec); });
+
+// ---------- cambiar de video ----------
+function resetVideo(){ job++; clearTimeout(scanT); try{ v.pause(); }catch(_){}
+  v.removeAttribute("src"); v.load(); probe.removeAttribute("src"); probe.load(); v.hidden=true; $("#empty").hidden=false; $("#file").value="";
+  dur=0; inT=0; outT=0; cuts=[]; grads=[]; frames=[]; crop=null; srcLink=""; fname="";
+  $("#strip").innerHTML='<p class="note">Al marcar el segmento aparecen aquí los fotogramas clave y los cortes detectados.</p>';
+  $("#scanMsg").textContent=""; $("#sheet").disabled=$("#copyPrompt").disabled=true; $("#go").disabled=true; $("#now").textContent="00:00.00";
+  $("#other").hidden=true; $("#aiMsg").textContent=(sampleChecked&&!sample)? NOCL : "Carga un video para empezar."; drawTL(); }
+$("#other").addEventListener("click",()=>{ if(lastRec && !$("#recSaveRow").hidden){ $("#recSaveRow").hidden=true; } resetVideo(); $("#drop").scrollIntoView({behavior:"smooth",block:"center"}); toast("Listo: suelta otro video, graba o pega una liga"); });
 
 // ---------- ligas de YouTube y Facebook ----------
 const KIT_URL="https://adanmartinezgalvez-ui.github.io/kit-produccion/analizador-de-referencias/";
