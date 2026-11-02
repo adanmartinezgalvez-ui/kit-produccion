@@ -82,24 +82,38 @@ td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-
 .fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+
 .pr{position:fixed;inset:0;background:#000;color:#fff;z-index:40;display:flex;flex-direction:column}
-.pr-view{flex:1;overflow:hidden;position:relative;cursor:pointer}
-.pr-text{position:absolute;left:0;right:0;top:0;padding-top:38vh;padding-bottom:60vh;font-family:var(--ui);font-weight:600;line-height:1.35;white-space:pre-wrap;color:#fff}
-.pr-mark{position:absolute;left:0;right:0;top:calc(38vh - 6px);height:3px;background:rgba(60,199,189,.75);pointer-events:none}
+.pr-view{flex:1;overflow:hidden;position:relative;cursor:pointer;--lp:38vh}
+.pr-view.fade{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0,#000 14%,#000 86%,transparent 100%)}
+.pr-text{position:absolute;top:0;padding-top:var(--lp);padding-bottom:100vh;font-family:var(--ui);font-weight:600;line-height:1.35;white-space:pre-wrap;color:#fff;margin:0 auto;left:0;right:0}
+.pr-mark{position:absolute;left:0;right:0;top:calc(var(--lp) - 6px);height:3px;background:rgba(60,199,189,.75);pointer-events:none}
+.pr-mark.arrow::before,.pr-mark.arrow::after{content:"";position:absolute;top:-9px;border:10px solid transparent}
+.pr-mark.arrow::before{left:0;border-left:16px solid #3cc7bd}
+.pr-mark.arrow::after{right:0;border-right:16px solid #3cc7bd}
 .pr-count{position:absolute;inset:0;display:grid;place-items:center;font:800 30vh/1 var(--display);color:#3cc7bd;background:rgba(0,0,0,.55)}
+.pr-paused{position:absolute;right:14px;top:12px;font:600 13px var(--mono);letter-spacing:.1em;color:#000;background:#f0a43a;padding:4px 10px;border-radius:6px;pointer-events:none}
 .pr-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;background:#111;border-top:1px solid #222;
   padding:10px max(12px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px))}
-.pb{font:600 15px/1 var(--ui);height:42px;min-width:44px;padding:0 14px;border-radius:9px;border:1px solid #333;background:#222;color:#eee;cursor:pointer}
+.pr-ctl .gp{display:flex;gap:4px;align-items:center}
+.pb{font:600 15px/1 var(--ui);height:42px;min-width:44px;padding:0 12px;border-radius:9px;border:1px solid #333;background:#222;color:#eee;cursor:pointer}
 .pb.main{background:#3cc7bd;color:#06201f;border-color:#3cc7bd;min-width:96px}
 .pr-sp{font:500 13px var(--mono);color:#aaa;padding:0 6px}
+.pr.hidectl .pr-ctl{display:none}
 body:has(.pr:not([hidden])) .toast{bottom:calc(96px + env(safe-area-inset-bottom, 0px));z-index:60}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.keys{font-size:13px;color:var(--muted);margin:0;line-height:1.7}
+.keys kbd{font:500 12px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--field);color:var(--ink)}
+.swatch{display:flex;gap:6px;flex-wrap:wrap}
+.swatch button{font:600 13px var(--ui);padding:7px 10px;border-radius:8px;cursor:pointer;border:2px solid transparent}
+.swatch button[aria-pressed="true"]{border-color:var(--accent)}
 </style>
 <div class="app">
-<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Teleprompter</h1><p class="sub">Pega tu guion, ajusta velocidad y tamaño, y léelo a pantalla completa. Toca la pantalla para pausar.</p></header>
+<header class="hd"><span class="eyebrow">Kit de producción</span><h1>Teleprompter</h1><p class="sub">Pega tu guion, acomoda la línea de lectura y el ancho del texto detrás de tu cámara, y léelo a pantalla completa. Toca la pantalla para pausar.</p></header>
 
 <div class="grid wide">
   <div class="card">
-    <h2>Guion</h2>
+    <div class="row" style="justify-content:space-between"><h2>Guion</h2><div class="row"><button class="btn ghost sm" type="button" id="sample">Texto de ejemplo</button><button class="btn ghost sm" type="button" id="clear">Borrar</button></div></div>
     <textarea id="txt" style="min-height:300px;font-size:16px" aria-label="Guion">Buenos días. Les damos la bienvenida a esta cápsula informativa.
 
 Hoy les compartimos tres recomendaciones para actuar con calma durante un simulacro.
@@ -112,39 +126,63 @@ Tercero: al llegar al punto de reunión, permanece ahí hasta que se indique lo 
 
 Prevenir es tarea de todas y todos. Gracias.</textarea>
     <p class="note" id="stats"></p>
+    <p class="note">Deja una línea en blanco entre párrafos para marcar pausas. El guion se guarda solo en este navegador.</p>
   </div>
   <div class="card">
-    <h2>Ajustes</h2>
-    <label class="f">Velocidad <small id="spv"></small><input type="range" id="sp" min="1" max="12" value="4"></label>
-    <label class="f">Tamaño de letra <small id="szv"></small><input type="range" id="sz" min="24" max="160" value="56"></label>
-    <div class="seg" id="szp" role="group" aria-label="Tamaños rápidos"><button type="button" data-v="40">Chico</button><button type="button" data-v="56">Mediano</button><button type="button" data-v="80">Grande</button><button type="button" data-v="110">Muy grande</button></div>
-    <label class="f">Margen lateral <small id="mgv"></small><input type="range" id="mg" min="2" max="25" value="8"></label>
+    <h2>Letra</h2>
     <label class="f">Tipo de letra<select id="fn">
       <option value="arial">Arial</option>
-      <option value="arialb" selected>Arial Bold</option>
       <option value="helv">Helvetica</option>
       <option value="helvn">Helvetica Neue</option>
       <option value="verd">Verdana</option>
     </select></label>
-    <p id="fprev" style="margin:0;background:#000;color:#fff;padding:12px 14px;border-radius:8px;font-size:24px;line-height:1.3">Así se verá tu guion en pantalla.</p>
+    <label class="check"><input type="checkbox" id="bold" checked> <b>Negritas</b></label>
+    <label class="f">Tamaño de letra <small id="szv"></small><input type="range" id="sz" min="24" max="160" value="56"></label>
+    <div class="seg" id="szp" role="group" aria-label="Tamaños rápidos"><button type="button" data-v="40">Chico</button><button type="button" data-v="56">Mediano</button><button type="button" data-v="80">Grande</button><button type="button" data-v="110">Muy grande</button></div>
+    <label class="f">Interlineado <small id="lhv"></small><input type="range" id="lh" min="1" max="2.2" step="0.05" value="1.35"></label>
+    <label class="f">Colores<div class="swatch" id="theme">
+      <button type="button" data-v="dark" style="background:#000;color:#fff">Blanco sobre negro</button>
+      <button type="button" data-v="light" style="background:#fff;color:#111;border-color:#ccc">Negro sobre blanco</button>
+      <button type="button" data-v="yellow" style="background:#000;color:#ffd400">Amarillo</button>
+      <button type="button" data-v="green" style="background:#000;color:#3dff6e">Verde</button>
+    </div></label>
+    <p id="fprev" style="margin:0;padding:12px 14px;border-radius:8px;font-size:24px;line-height:1.3">Así se verá tu guion en pantalla.</p>
     <p class="note">Helvetica y Helvetica Neue vienen en iPhone, iPad y Mac. En Windows o Android se muestran como Arial.</p>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Posición frente a la cámara</h2>
+    <label class="f">Altura de la línea de lectura <small id="lpv"></small><input type="range" id="lp" min="8" max="85" value="38"></label>
+    <div class="seg" id="lpp" role="group" aria-label="Altura rápida"><button type="button" data-v="15">Arriba</button><button type="button" data-v="38">Media alta</button><button type="button" data-v="50">Centro</button></div>
+    <label class="f">Ancho del texto <small id="cwv"></small><input type="range" id="cw" min="20" max="96" value="84"></label>
+    <div class="seg" id="cwp" role="group" aria-label="Ancho rápido"><button type="button" data-v="35">Angosto</button><button type="button" data-v="60">Medio</button><button type="button" data-v="84">Completo</button></div>
+    <label class="f">Alineación<div class="seg" id="al"><button type="button" data-v="left">Izquierda</button><button type="button" data-v="center">Centrado</button></div></label>
+    <p class="note">Con la cámara frente al monitor: pon la línea justo abajo del lente y el texto angosto y centrado, así casi no se nota que lees.</p>
+  </div>
+  <div class="card">
+    <h2>Lectura</h2>
+    <label class="f">Velocidad <small id="spv"></small><input type="range" id="sp" min="1" max="12" value="4"></label>
+    <div class="mini">
+      <label class="f">Cuenta regresiva<select id="cd"><option value="0">Sin cuenta</option><option value="3" selected>3 segundos</option><option value="5">5 segundos</option><option value="10">10 segundos</option></select></label>
+    </div>
+    <label class="check"><input type="checkbox" id="guide" checked> Línea de lectura visible</label>
+    <label class="check"><input type="checkbox" id="fade" checked> Desvanecer el texto arriba y abajo</label>
     <label class="check"><input type="checkbox" id="mir"> Texto en espejo (para cristal de teleprompter)</label>
-    <label class="check"><input type="checkbox" id="cnt" checked> Cuenta regresiva de 3 segundos</label>
     <button class="btn" type="button" id="go">Iniciar teleprompter</button>
-    <p class="note">En la lectura: toca para pausar, barra espaciadora para pausar, flechas ↑ ↓ para cambiar velocidad, botones A− / A+ (o teclas − y +) para cambiar el tamaño de letra.</p>
+    <p class="keys">Teclas durante la lectura: <kbd>Espacio</kbd> pausa · <kbd>↑</kbd><kbd>↓</kbd> velocidad · <kbd>+</kbd><kbd>−</kbd> tamaño · <kbd>←</kbd><kbd>→</kbd> ancho · <kbd>Shift</kbd>+<kbd>↑</kbd><kbd>↓</kbd> mover línea · <kbd>B</kbd> negritas · <kbd>G</kbd> línea · <kbd>M</kbd> espejo · <kbd>R</kbd> al inicio · <kbd>H</kbd> ocultar botones · <kbd>F</kbd> pantalla completa · <kbd>Esc</kbd> salir</p>
   </div>
 </div>
 <div class="pr" id="pr" hidden>
-  <div class="pr-view" id="view"><div class="pr-text" id="prt"></div><div class="pr-mark"></div><div class="pr-count" id="count" hidden></div></div>
+  <div class="pr-view" id="view"><div class="pr-text" id="prt"></div><div class="pr-mark arrow" id="mark"></div><div class="pr-paused" id="paused" hidden>PAUSA</div><div class="pr-count" id="count" hidden></div></div>
   <div class="pr-ctl">
-    <button class="pb" type="button" id="slow" aria-label="Más lento">Vel −</button>
-    <button class="pb main" type="button" id="pp">Pausa</button>
-    <button class="pb" type="button" id="fast" aria-label="Más rápido">Vel +</button>
-    <button class="pb" type="button" id="aminus" aria-label="Letra más chica">A−</button>
-    <button class="pb" type="button" id="aplus" aria-label="Letra más grande">A+</button>
+    <div class="gp"><button class="pb" type="button" id="slow" aria-label="Más lento">Vel −</button><button class="pb main" type="button" id="pp">Pausa</button><button class="pb" type="button" id="fast" aria-label="Más rápido">Vel +</button></div>
     <span class="pr-sp" id="prsp"></span>
-    <button class="pb" type="button" id="rew">Al inicio</button>
-    <button class="pb" type="button" id="exit">Salir</button>
+    <div class="gp"><button class="pb" type="button" id="aminus" aria-label="Letra más chica">A−</button><button class="pb" type="button" id="aplus" aria-label="Letra más grande">A+</button><button class="pb" type="button" id="bb" aria-label="Negritas"><b>B</b></button></div>
+    <div class="gp"><button class="pb" type="button" id="lup" aria-label="Subir línea de lectura">Línea ↑</button><button class="pb" type="button" id="ldn" aria-label="Bajar línea de lectura">Línea ↓</button></div>
+    <div class="gp"><button class="pb" type="button" id="wminus" aria-label="Texto más angosto">Ancho −</button><button class="pb" type="button" id="wplus" aria-label="Texto más ancho">Ancho +</button></div>
+    <div class="gp"><button class="pb" type="button" id="rew">Al inicio</button><button class="pb" type="button" id="fs" aria-label="Pantalla completa">⛶</button><button class="pb" type="button" id="exit">Salir</button></div>
   </div>
 </div>
 
@@ -189,45 +227,78 @@ function sampleImage(w,h,seed){
 }
 
 
+
+const SAMPLE=$("#txt").value;
 const S=store.get("tp-v1",{});
-["sp","sz","mg"].forEach(k=>{ if(S[k]) $("#"+k).value=S[k]; });
-if(S.txt) $("#txt").value=S.txt; if(S.mir!=null) $("#mir").checked=S.mir; if(S.fn) $("#fn").value=S.fn;
-const FONTS={arial:['Arial, "Liberation Sans", sans-serif',400],arialb:['Arial, "Liberation Sans", sans-serif',700],helv:['Helvetica, Arial, sans-serif',400],helvn:['"Helvetica Neue", Helvetica, Arial, sans-serif',400],verd:['Verdana, Geneva, sans-serif',400]};
-function setFont(el){ const f=FONTS[$("#fn").value]||FONTS.arialb; el.style.fontFamily=f[0]; el.style.fontWeight=f[1]; if(el.id==="fprev") el.style.fontSize=Math.min(+$("#sz").value,90)+"px"; }
-const szSeg=seg($("#szp"), $("#sz").value, v=>{ $("#sz").value=v; labels(); saveS(); setFont($("#fprev")); });
-function saveS(){ store.set("tp-v1",{sp:$("#sp").value,sz:$("#sz").value,mg:$("#mg").value,txt:$("#txt").value,mir:$("#mir").checked,fn:$("#fn").value}); }
-function labels(){ $("#spv").textContent=$("#sp").value; $("#szv").textContent=$("#sz").value+" px"; $("#mgv").textContent=$("#mg").value+" %";
-  const w=$("#txt").value.trim().split(/\s+/).filter(Boolean).length; const sec=Math.round(w/150*60);
-  $("#stats").textContent=`${w} palabras · unos ${Math.floor(sec/60)} min ${sec%60} s leído a ritmo normal`; }
-["sp","sz","mg","mir","txt","fn"].forEach(k=>$("#"+k).addEventListener("input",()=>{ labels(); saveS(); setFont($("#fprev")); szSeg($("#sz").value); }));
-$("#fn").addEventListener("change",()=>{ saveS(); setFont($("#fprev")); });
-labels(); setFont($("#fprev"));
+// migración de la versión anterior
+if(S.fn==="arialb"){ S.fn="arial"; if(S.bold==null) S.bold=true; }
+if(S.cw==null && S.mg) S.cw=Math.max(20,Math.min(96,100-2*(+S.mg)));
+["sp","sz","lh","lp","cw","cd"].forEach(k=>{ if(S[k]!=null) $("#"+k).value=S[k]; });
+if(S.txt!=null) $("#txt").value=S.txt; if(S.fn) $("#fn").value=S.fn;
+["mir","bold","guide","fade"].forEach(k=>{ if(S[k]!=null) $("#"+k).checked=S[k]; });
+let theme=S.theme||"dark", align=S.al||"center";
+const THEMES={dark:["#000","#fff"],light:["#fff","#111"],yellow:["#000","#ffd400"],green:["#000","#3dff6e"]};
+const FONTS={arial:'Arial, "Liberation Sans", sans-serif',helv:'Helvetica, Arial, sans-serif',helvn:'"Helvetica Neue", Helvetica, Arial, sans-serif',verd:'Verdana, Geneva, sans-serif'};
+const view=$("#view"), prt=$("#prt"), pr=$("#pr");
+function style(el){ el.style.fontFamily=FONTS[$("#fn").value]||FONTS.arial; el.style.fontWeight=$("#bold").checked?700:400; const t=THEMES[theme]||THEMES.dark; el.style.background=t[0]; el.style.color=t[1]; }
+function preview(){ const p=$("#fprev"); style(p); p.style.fontSize=Math.min(+$("#sz").value,72)+"px"; p.style.lineHeight=$("#lh").value; p.style.textAlign=align; }
+function saveS(){ const o={txt:$("#txt").value,fn:$("#fn").value,theme,al:align}; ["sp","sz","lh","lp","cw","cd"].forEach(k=>o[k]=$("#"+k).value); ["mir","bold","guide","fade"].forEach(k=>o[k]=$("#"+k).checked); store.set("tp-v1",o); }
+const szSeg=seg($("#szp"),$("#sz").value,v=>{ $("#sz").value=v; upd(); });
+const lpSeg=seg($("#lpp"),$("#lp").value,v=>{ $("#lp").value=v; upd(); });
+const cwSeg=seg($("#cwp"),$("#cw").value,v=>{ $("#cw").value=v; upd(); });
+seg($("#theme"),theme,v=>{ theme=v; upd(); });
+seg($("#al"),align,v=>{ align=v; upd(); });
+function labels(){ $("#spv").textContent=$("#sp").value; $("#szv").textContent=$("#sz").value+" px"; $("#lhv").textContent=(+$("#lh").value).toFixed(2); $("#lpv").textContent=$("#lp").value+" % desde arriba"; $("#cwv").textContent=$("#cw").value+" % de la pantalla";
+  const t=$("#txt").value, w=t.trim().split(/\s+/).filter(Boolean).length, sec=Math.round(w/150*60);
+  $("#stats").textContent=`${w} palabras · ${t.length} caracteres · unos ${Math.floor(sec/60)} min ${sec%60} s leído a ritmo normal`; }
+function upd(){ labels(); preview(); saveS(); szSeg($("#sz").value); lpSeg($("#lp").value); cwSeg($("#cw").value); if(!pr.hidden) layout(true); }
+$$(".app input, .app select, .app textarea").forEach(e=>{ e.addEventListener("input",upd); e.addEventListener("change",upd); });
+$("#sample").addEventListener("click",()=>{ $("#txt").value=SAMPLE; upd(); });
+$("#clear").addEventListener("click",()=>{ if(!$("#txt").value) return; $("#txt").value=""; upd(); $("#txt").focus(); toast("Guion borrado"); });
+labels(); preview();
 
 let pos=0, playing=false, last=0, raf=0, speed=+$("#sp").value;
-const view=$("#view"), prt=$("#prt");
-function apply(){ prt.style.transform=`translateY(${-pos}px)` + ($("#mir").checked?" scaleX(-1)":""); $("#prsp").textContent="Vel. "+speed; $("#pp").textContent=playing?"Pausa":"Seguir"; }
-function loop(t){ raf=requestAnimationFrame(loop); const dt=last?(t-last)/1000:0; last=t; if(playing){ pos+=speed*16*dt; const max=prt.scrollHeight-view.clientHeight*0.4; if(pos>=max){ pos=max; playing=false; } apply(); } }
+// mantiene la palabra que está en la línea al cambiar tamaño, ancho o altura
+function layout(keep){ const ratio=keep&&prt.scrollHeight?pos/prt.scrollHeight:0;
+  style(prt); pr.style.background=prt.style.background; prt.style.fontSize=$("#sz").value+"px"; prt.style.lineHeight=$("#lh").value; prt.style.textAlign=align;
+  prt.style.width=$("#cw").value+"vw"; view.style.setProperty("--lp",$("#lp").value+"vh");
+  $("#mark").hidden=!$("#guide").checked; view.classList.toggle("fade",$("#fade").checked);
+  if(keep) pos=ratio*prt.scrollHeight; apply(); }
+function apply(){ prt.style.transform=`translateY(${-pos}px)`+($("#mir").checked?" scaleX(-1)":""); $("#prsp").textContent="Vel. "+speed; $("#pp").textContent=playing?"Pausa":"Seguir"; $("#paused").hidden=playing||!$("#count").hidden; }
+function loop(t){ raf=requestAnimationFrame(loop); const dt=last?(t-last)/1000:0; last=t; if(playing){ pos+=speed*16*dt; const max=prt.scrollHeight-view.clientHeight*(+$("#lp").value/100)-parseFloat(getComputedStyle(prt).fontSize); if(pos>=max){ pos=Math.max(0,max); playing=false; } apply(); } }
+let wl=null;
 async function open(){
-  prt.textContent=$("#txt").value; prt.style.fontSize=$("#sz").value+"px"; setFont(prt); prt.style.paddingLeft=prt.style.paddingRight=$("#mg").value+"vw";
-  speed=+$("#sp").value; pos=0; $("#pr").hidden=false; document.body.style.overflow="hidden";
+  prt.textContent=$("#txt").value||" "; speed=+$("#sp").value; pos=0; pr.hidden=false; pr.classList.remove("hidectl"); document.body.style.overflow="hidden"; layout(false);
   try{ await document.documentElement.requestFullscreen(); }catch(e){}
-  try{ if("wakeLock" in navigator) await navigator.wakeLock.request("screen"); }catch(e){}
-  last=0; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop); apply();
-  if($("#cnt").checked){ const c=$("#count"); c.hidden=false; for(let i=3;i>0;i--){ c.textContent=i; await new Promise(r=>setTimeout(r,1000)); if($("#pr").hidden) return; } c.hidden=true; }
+  try{ if("wakeLock" in navigator) wl=await navigator.wakeLock.request("screen"); }catch(e){}
+  last=0; cancelAnimationFrame(raf); raf=requestAnimationFrame(loop); playing=false; apply();
+  const n=+$("#cd").value;
+  if(n){ const c=$("#count"); c.hidden=false; apply(); for(let i=n;i>0;i--){ c.textContent=i; await new Promise(r=>setTimeout(r,1000)); if(pr.hidden) return; } c.hidden=true; }
   playing=true; apply();
 }
-function close(){ playing=false; $("#pr").hidden=true; document.body.style.overflow=""; cancelAnimationFrame(raf); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
+function close(){ playing=false; pr.hidden=true; document.body.style.overflow=""; cancelAnimationFrame(raf); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} try{ wl&&wl.release(); }catch(e){} }
+const toggle=()=>{ if(!$("#count").hidden) return; playing=!playing; apply(); };
+function step(id,d,min,max,msg){ const el=$("#"+id); const v=Math.max(min,Math.min(max,(+el.value)+d)); el.value=v; upd(); toast(msg(v)); }
+const act={
+  slower:()=>{ speed=Math.max(1,speed-1); apply(); }, faster:()=>{ speed=Math.min(20,speed+1); apply(); },
+  smaller:()=>step("sz",-8,24,160,v=>"Letra "+v+" px"), bigger:()=>step("sz",8,24,160,v=>"Letra "+v+" px"),
+  up:()=>step("lp",-2,8,85,v=>"Línea al "+v+" %"), down:()=>step("lp",2,8,85,v=>"Línea al "+v+" %"),
+  narrow:()=>step("cw",-4,20,96,v=>"Ancho "+v+" %"), wide:()=>step("cw",4,20,96,v=>"Ancho "+v+" %"),
+  bold:()=>{ $("#bold").checked=!$("#bold").checked; upd(); toast($("#bold").checked?"Negritas":"Sin negritas"); },
+  guide:()=>{ $("#guide").checked=!$("#guide").checked; upd(); }, mirror:()=>{ $("#mir").checked=!$("#mir").checked; upd(); },
+  rew:()=>{ pos=0; apply(); }, ctl:()=>{ pr.classList.toggle("hidectl"); },
+  fs:async()=>{ try{ if(document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }catch(e){} }
+};
 $("#go").addEventListener("click",open);
 $("#exit").addEventListener("click",close);
-$("#pp").addEventListener("click",()=>{ playing=!playing; apply(); });
-view.addEventListener("click",()=>{ playing=!playing; apply(); });
-$("#slow").addEventListener("click",()=>{ speed=Math.max(1,speed-1); apply(); });
-$("#fast").addEventListener("click",()=>{ speed=Math.min(20,speed+1); apply(); });
-$("#rew").addEventListener("click",()=>{ pos=0; apply(); });
-function resize(d){ const old=parseFloat(prt.style.fontSize)||56; const nv=Math.max(24,Math.min(200,old+d)); const ratio=prt.scrollHeight?pos/prt.scrollHeight:0; prt.style.fontSize=nv+"px"; pos=ratio*prt.scrollHeight; $("#sz").value=Math.min(160,nv); labels(); saveS(); szSeg($("#sz").value); setFont($("#fprev")); toast("Letra "+nv+" px"); apply(); }
-$("#aminus").addEventListener("click",e=>{ e.stopPropagation(); resize(-8); });
-$("#aplus").addEventListener("click",e=>{ e.stopPropagation(); resize(8); });
-document.addEventListener("keydown",e=>{ if($("#pr").hidden) return; if(e.code==="Space"){ e.preventDefault(); playing=!playing; } else if(e.key==="ArrowUp"){ speed=Math.min(20,speed+1); } else if(e.key==="ArrowDown"){ speed=Math.max(1,speed-1); } else if(e.key==="Escape"){ close(); return; } else if(e.key==="+"||e.key==="="){ resize(8); return; } else if(e.key==="-"){ resize(-8); return; } apply(); });
+$("#pp").addEventListener("click",toggle); view.addEventListener("click",toggle);
+[["slow","slower"],["fast","faster"],["aminus","smaller"],["aplus","bigger"],["bb","bold"],["lup","up"],["ldn","down"],["wminus","narrow"],["wplus","wide"],["rew","rew"],["fs","fs"]].forEach(([id,a])=>$("#"+id).addEventListener("click",e=>{ e.stopPropagation(); act[a](); e.currentTarget.blur(); }));
+document.addEventListener("keydown",e=>{ if(pr.hidden) return; const k=e.key, sh=e.shiftKey;
+  if(e.code==="Space"){ e.preventDefault(); toggle(); return; }
+  if(k==="Escape"){ close(); return; }
+  const map={ArrowUp:sh?"up":"faster",ArrowDown:sh?"down":"slower",ArrowLeft:"narrow",ArrowRight:"wide","+":"bigger","=":"bigger","-":"smaller",b:"bold",B:"bold",g:"guide",G:"guide",m:"mirror",M:"mirror",r:"rew",R:"rew",h:"ctl",H:"ctl",f:"fs",F:"fs"};
+  const a=map[k]; if(a){ e.preventDefault(); act[a](); } });
+window.addEventListener("resize",()=>{ if(!pr.hidden) layout(true); });
 
 })();
 </script>
