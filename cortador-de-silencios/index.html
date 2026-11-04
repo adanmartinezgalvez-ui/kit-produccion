@@ -1,0 +1,267 @@
+<!doctype html><html><head><script>
+/* Kit de Producción en GitHub Pages: fuera de Claude, las descargas van directo al navegador. */
+(function(){ if(window.claude&&window.claude.use) return;
+ function save(o){ var n=(o&&o.filename)||"archivo", d=o&&o.data;
+  var b=(d instanceof Blob)?d:new Blob([d],{type:/\.csv$/i.test(n)?"text/csv;charset=utf-8":/\.json$/i.test(n)?"application/json":/\.svg$/i.test(n)?"image/svg+xml":"text/plain;charset=utf-8"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=n; a.rel="noopener"; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },4000); return Promise.resolve({ok:true}); }
+ window.claude={use:function(n){ return n==="downloads"?Promise.resolve({save:save}):Promise.reject(Object.assign(new Error("No disponible fuera de Claude"),{code:"unavailable"})); }};
+})();
+</script><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cortador de Silencios</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Kit de Producción — shared system. Layout: one centered work column, tool panels in a responsive two-up grid, results set in mono */
+:root{
+  --bg:#f3f2ef; --panel:#ffffff; --ink:#191a1c; --muted:#5f6268; --line:#dcdad5; --field:#f8f7f4;
+  --accent:#0b7a75; --accent-ink:#075b57; --on-accent:#ffffff; --soft:#e3f1ef;
+  --good:#1d7f45; --warn:#a85a00; --bad:#b42318;
+  --display:"Bricolage Grotesque", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --ui:"Figtree", "Helvetica Neue", Arial, sans-serif;
+  --mono:"DM Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --panel:#1b1c1f; --ink:#ecebe8; --muted:#9a9da3; --line:#2d2f33; --field:#232428;
+  --accent:#3cc7bd; --accent-ink:#5fd6cd; --on-accent:#06201f; --soft:#173634;
+  --good:#4cc17d; --warn:#f0a43a; --bad:#ff6b5e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:22px 48px}
+.app{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,34px);line-height:1.08;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:64ch}
+h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.grid.wide{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}
+@media (max-width:820px){.grid,.grid.wide{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13.5px;font-weight:600;min-width:0}
+label.f small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=time],input[type=url],textarea,select{width:100%;min-width:0;font:inherit;font-weight:400;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+textarea{min-height:110px;resize:vertical}
+textarea.mono{font-family:var(--mono);font-size:13px;line-height:1.6}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:17px;height:17px}
+input[type=color]{width:38px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--field);padding:2px;cursor:pointer}
+input[type=file]{font:inherit;font-size:13px;max-width:100%}
+.check{display:flex;align-items:center;gap:8px;font-size:14px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{flex:1 1 auto;font:inherit;font-size:13.5px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--field);color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn{font:inherit;font-weight:600;font-size:14.5px;padding:10px 16px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{font-size:13px;padding:6px 10px}
+.btn:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.big{font-family:var(--mono);font-size:clamp(28px,5vw,40px);font-weight:500;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kv div{background:var(--field);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--muted)}
+.kv b{font-family:var(--mono);font-size:20px;font-weight:500;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--muted);margin:0}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.preview{background:var(--field);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.preview canvas,.preview img{display:block;width:100%;height:auto;max-width:100%}
+.checker{background-color:#c9c9c9;background-image:linear-gradient(45deg,#a9a9a9 25%,transparent 25%),linear-gradient(-45deg,#a9a9a9 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#a9a9a9 75%),linear-gradient(-45deg,transparent 75%,#a9a9a9 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:50;max-width:calc(100% - 32px)}
+.fb{display:flex;flex-direction:column;gap:10px}
+.fb img{width:100%;border-radius:8px;border:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.back{font-size:13.5px;font-weight:600;color:var(--accent-ink);text-decoration:none;align-self:flex-start}
+.back:hover{text-decoration:underline}
+.priv{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--muted);margin:0}
+.bar{height:8px;border-radius:99px;background:var(--field);border:1px solid var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.status{font-size:13.5px;color:var(--muted);margin:0;min-height:1.4em}
+.status.err{color:var(--bad)}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:22px 14px;border:1.5px dashed var(--line);border-radius:10px;background:var(--field);text-align:center;cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop small{color:var(--muted)}
+.wave{width:100%;height:120px;display:block;background:var(--field);border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.player video,.player audio{display:block;width:100%;max-height:360px;background:#000;border-radius:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+</style>
+<div class="app">
+<a class="back" href="../">← Kit de Producción</a>
+<header class="hd"><span class="eyebrow">Edición rápida</span><h1>Cortador de Silencios</h1><p class="sub">Detecta las pausas de entrevistas, ruedas de prensa o clases grabadas y te da la secuencia ya cortada para abrirla en Final Cut (FCPXML) o en Premiere y DaVinci (EDL).</p>
+<p class="priv">🔒 El archivo se analiza en tu equipo. No se sube a ningún lado y no necesita descargar modelos.</p></header>
+<div class="grid wide">
+<section class="card" aria-label="Ajustes">
+  <h2>1 · Video o audio</h2>
+  <label class="drop" id="drop"><input type="file" id="file" accept="video/*,audio/*"><strong>Elegir archivo</strong><small>o arrástralo aquí · MP4, MOV, MP3, WAV, M4A</small></label>
+  <div class="bar" id="pbar"><i></i></div>
+  <p class="status" id="status" role="status">Elige el archivo de la entrevista.</p>
+  <h2>2 · Detección</h2>
+  <label class="f">Umbral de silencio <small id="thv"></small><input type="range" id="th" min="-70" max="-15" step="1" value="-40"></label>
+  <label class="f">Pausa mínima a cortar <small id="minv"></small><input type="range" id="min" min="0.2" max="3" step="0.1" value="0.7"></label>
+  <label class="f">Margen antes y después de hablar <small id="padv"></small><input type="range" id="pad" min="0" max="0.6" step="0.05" value="0.15"></label>
+  <button class="btn ghost sm" id="auto" type="button" disabled>Ajustar umbral automáticamente</button>
+  <h2>3 · Exportar</h2>
+  <div class="cols">
+    <label class="f">Cuadros por segundo<select id="fps"><option value="23.976">23.976</option><option value="24">24</option><option value="25">25</option><option value="29.97" selected>29.97</option><option value="30">30</option><option value="50">50</option><option value="59.94">59.94</option><option value="60">60</option></select></label>
+  </div>
+  <label class="f">Ruta del archivo en tu Mac <small>Opcional. Con ella Final Cut enlaza el video solo. En Finder: clic derecho en el archivo, mantén Opción y elige «Copiar como nombre de ruta».</small><input type="text" id="path" placeholder="/Users/tu-usuario/Movies/entrevista.mov"></label>
+  <div class="row"><button class="btn" id="fcp" type="button" disabled>Final Cut (.fcpxml)</button><button class="btn ghost" id="edl" type="button" disabled>Premiere / DaVinci (.edl)</button></div>
+  <p class="note">Si no pones la ruta, en Final Cut el clip aparece sin enlazar: selecciónalo y usa Archivo › Volver a enlazar archivos.</p>
+</section>
+<section class="card" aria-label="Resultado">
+  <h2>Resultado</h2>
+  <div class="kv"><div><span>Duración original</span><b id="k1">—</b></div><div><span>Después de cortar</span><b id="k2">—</b></div><div><span>Cortes</span><b id="k3">—</b></div></div>
+  <canvas class="wave" id="wave" width="1200" height="240" aria-label="Forma de onda con los silencios marcados"></canvas>
+  <div class="legend"><span><i style="background:var(--accent)"></i>Se queda</span><span><i style="background:var(--bad);opacity:.5"></i>Se corta</span><span>Haz clic en la onda para ir a ese punto</span></div>
+  <div class="player" id="player"></div>
+  <label class="check"><input type="checkbox" id="skip" checked> Vista previa saltando los silencios</label>
+</section>
+</div>
+
+</div>
+<script type="module">
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){ let el=$(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=t; el.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>el.hidden=true,2600); }
+function seg(el, v, cb){ const set=val=>el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===String(val)))); set(v); el.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); cb(b.dataset.v); }); return set; }
+let _dl=null; function dl(){ if(!_dl) _dl=(window.claude&&window.claude.use)?window.claude.use("downloads").catch(()=>null):Promise.resolve(null); return _dl; }
+async function copyText(t){ try{ await navigator.clipboard.writeText(t); toast("Copiado"); return true; }catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} ta.remove(); toast(ok?"Copiado":"Selecciona el texto y cópialo a mano"); return ok; } }
+function fallbackBox(){ let fb=$("#fallback"); if(!fb){ fb=document.createElement("div"); fb.id="fallback"; fb.className="card fb"; $(".app").appendChild(fb); } fb.innerHTML=""; fb.hidden=false; return fb; }
+async function showFallback(name, data){
+  const fb=fallbackBox(); const h=document.createElement("h2"); h.textContent="Guardar a mano"; fb.appendChild(h);
+  const p=document.createElement("p"); p.className="note"; fb.appendChild(p);
+  if(data instanceof Blob && data.type.startsWith("image/")){ p.textContent="Aquí no se puede descargar directo. Mantén presionada la imagen (o clic derecho › Guardar imagen)."; const img=document.createElement("img"); img.alt=name; img.src=await new Promise(r=>{const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(data);}); fb.appendChild(img); }
+  else if(typeof data==="string"){ p.textContent="Aquí no se puede descargar directo. Copia el contenido:"; const ta=document.createElement("textarea"); ta.className="mono"; ta.value=data; ta.readOnly=true; fb.appendChild(ta); const b=document.createElement("button"); b.className="btn ghost sm"; b.type="button"; b.textContent="Copiar"; b.onclick=()=>copyText(data); fb.appendChild(b); }
+  else { p.textContent="Aquí no se puede descargar este archivo. Abre la página dentro de claude.ai para guardarlo."; }
+  fb.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+async function saveFile(name, data){
+  const d=await dl();
+  if(!d){ await showFallback(name, data); return false; }
+  try{ await d.save({filename:name, data}); toast("Listo: "+name); return true; }
+  catch(e){ const c=e&&e.code; if(c==="declined"){ toast("Descarga cancelada"); return false; } if(c==="rate_limited"){ toast("Ya hay una descarga pendiente"); return false; } await showFallback(name, data); return false; }
+}
+function canvasBlob(c, type, q){ return new Promise(r=>c.toBlob(r, type||"image/png", q)); }
+function slug(t){ return (t||"archivo").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"archivo"; }
+function readImage(file){ return new Promise((res,rej)=>{ const url=URL.createObjectURL(file); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url; }); }
+
+function drop(el,input,cb){["dragenter","dragover"].forEach(t=>el.addEventListener(t,e=>{e.preventDefault();el.classList.add("over")}));["dragleave","drop"].forEach(t=>el.addEventListener(t,e=>{e.preventDefault();el.classList.remove("over")}));el.addEventListener("drop",e=>{const f=[...e.dataTransfer.files];if(f.length)cb(f)});input.addEventListener("change",()=>{const f=[...input.files];if(f.length)cb(f);input.value=""});}
+function prog(sel,p){const i=document.querySelector(sel+">i");if(i)i.style.width=Math.round(Math.max(0,Math.min(1,p))*100)+"%";}
+function status(t,err){const s=$("#status");s.textContent=t;s.classList.toggle("err",!!err);}
+const HF="https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.1";
+/* Cortador de Silencios — envolvente RMS → segmentos → FCPXML 1.9 / EDL CMX3600 */
+const HOP=0.01; // 10 ms por ventana
+const S={file:null,name:"entrevista",db:null,dur:0,keep:[],media:null,vw:1920,vh:1080,hasV:true};
+const lbl=()=>{ $("#thv").textContent=$("#th").value+" dB"; $("#minv").textContent=(+$("#min").value).toFixed(1)+" s"; $("#padv").textContent=(+$("#pad").value).toFixed(2)+" s"; };
+["th","min","pad"].forEach(id=>$("#"+id).addEventListener("input",()=>{ lbl(); if(S.db) compute(); })); lbl();
+drop($("#drop"),$("#file"),f=>load(f[0]));
+$("#auto").onclick=()=>{ if(!S.db) return; const v=[...S.db].filter(x=>x>-99).sort((a,b)=>a-b); if(!v.length) return;
+ const floor=v[Math.floor(v.length*.1)], speech=v[Math.floor(v.length*.7)]; const th=Math.round(Math.max(-70,Math.min(-15,floor+(speech-floor)*.35)));
+ $("#th").value=th; lbl(); compute(); toast("Umbral: "+th+" dB"); };
+$("#fcp").onclick=()=>saveFile(S.name+"-sin-silencios.fcpxml",fcpxml());
+$("#edl").onclick=()=>saveFile(S.name+"-sin-silencios.edl",edl());
+$("#wave").addEventListener("click",e=>{ if(!S.media||!S.dur) return; const r=e.currentTarget.getBoundingClientRect(); S.media.currentTime=(e.clientX-r.left)/r.width*S.dur; });
+
+async function load(f){
+ if(!f) return; S.file=f; S.name=slug(f.name.replace(/\.[^.]+$/,"")); S.db=null; ["fcp","edl","auto"].forEach(id=>$("#"+id).disabled=true);
+ const isV=f.type.startsWith("video/")||/\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name); S.hasV=isV;
+ const m=document.createElement(isV?"video":"audio"); m.controls=true; m.playsInline=true; m.preload="metadata"; m.src=URL.createObjectURL(f);
+ if(S.media) URL.revokeObjectURL(S.media.src); $("#player").innerHTML=""; $("#player").appendChild(m); S.media=m;
+ m.addEventListener("loadedmetadata",()=>{ if(m.videoWidth){ S.vw=m.videoWidth; S.vh=m.videoHeight; } });
+ status("Leyendo el audio…"); prog("#pbar",.15);
+ try{
+  const buf=await f.arrayBuffer(); prog("#pbar",.4);
+  const AC=window.OfflineAudioContext||window.webkitOfflineAudioContext; const ctx=new AC(1,16000,16000);
+  const ab=await new Promise((res,rej)=>{ const p=ctx.decodeAudioData(buf,res,rej); if(p&&p.then) p.then(res,rej); });
+  prog("#pbar",.8); S.dur=ab.duration;
+  const ch=[]; for(let c=0;c<ab.numberOfChannels;c++) ch.push(ab.getChannelData(c));
+  const sr=ab.sampleRate, hop=Math.round(sr*HOP), n=Math.floor(ch[0].length/hop); S.db=new Float32Array(n);
+  for(let i=0;i<n;i++){ let acc=0; const o=i*hop; for(const d of ch){ for(let j=0;j<hop;j++){ const x=d[o+j]; acc+=x*x; } } const rms=Math.sqrt(acc/(hop*ch.length)); S.db[i]=rms>0?20*Math.log10(rms):-100; }
+  prog("#pbar",1); $("#auto").disabled=false; $("#auto").click();
+ }catch(e){ console.error(e); status("No se pudo leer el audio de este archivo: "+(e.message||e)+". Prueba con MP4, MOV o WAV.",true); }
+}
+function compute(){
+ const th=+$("#th").value, minS=+$("#min").value, pad=+$("#pad").value, db=S.db, n=db.length;
+ // silencios largos
+ const sil=[]; let st=-1;
+ for(let i=0;i<=n;i++){ const q=i<n&&db[i]<th; if(q&&st<0) st=i; if(!q&&st>=0){ const a=st*HOP,b=i*HOP; if(b-a>=minS) sil.push([a,b]); st=-1; } }
+ // partes que se quedan, con margen
+ const keep=[]; let t=0;
+ for(const [a,b] of sil){ if(a>0.02){ const ka=t, kb=Math.min(S.dur,a+pad); if(kb-ka>0.05) keep.push([ka,kb]); t=Math.max(kb,b-pad); } else t=Math.max(0,b-pad);
+  if(b>=S.dur-2*HOP) t=S.dur; }
+ if(S.dur-t>0.05) keep.push([t,S.dur]);
+ // une partes que se tocan
+ S.keep=keep.reduce((o,k)=>{ const l=o[o.length-1]; if(l&&k[0]-l[1]<0.02) l[1]=k[1]; else o.push([...k]); return o; },[]);
+ const tot=S.keep.reduce((a,[x,y])=>a+y-x,0);
+ $("#k1").textContent=fmt(S.dur); $("#k2").textContent=fmt(tot); $("#k3").textContent=Math.max(0,S.keep.length-1);
+ status(`Se quitan ${fmt(S.dur-tot)} (${Math.round((1-tot/(S.dur||1))*100)}%) en ${Math.max(0,S.keep.length-1)} cortes.`);
+ ["fcp","edl"].forEach(id=>$("#"+id).disabled=!S.keep.length); drawWave();
+}
+function fmt(s){ s=Math.max(0,Math.round(s)); const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60; return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0"); }
+function drawWave(){
+ const c=$("#wave"), x=c.getContext("2d"), W=c.width, H=c.height, db=S.db, n=db.length; const cs=getComputedStyle(document.documentElement);
+ x.clearRect(0,0,W,H); const bad=cs.getPropertyValue("--bad").trim()||"#b42318", acc=cs.getPropertyValue("--accent").trim()||"#0b7a75", mut=cs.getPropertyValue("--muted").trim()||"#888";
+ x.globalAlpha=.18; x.fillStyle=bad; let prev=0; for(const [a,b] of S.keep){ x.fillRect(prev/S.dur*W,0,(a-prev)/S.dur*W,H); prev=b; } x.fillRect(prev/S.dur*W,0,(S.dur-prev)/S.dur*W,H); x.globalAlpha=1;
+ const lo=-70; for(let px=0;px<W;px++){ const i0=Math.floor(px/W*n), i1=Math.max(i0+1,Math.floor((px+1)/W*n)); let m=-100; for(let i=i0;i<i1&&i<n;i++) if(db[i]>m) m=db[i];
+  const t=px/W*S.dur; const inK=S.keep.some(([a,b])=>t>=a&&t<b); const h=Math.max(1,(Math.max(lo,m)-lo)/(-lo)*H*.95);
+  x.fillStyle=inK?acc:mut; x.fillRect(px,(H-h)/2,1,h); }
+ const ty=H/2-(Math.max(lo,+$("#th").value)-lo)/(-lo)*H*.475; x.strokeStyle=bad; x.setLineDash([6,5]); x.beginPath(); x.moveTo(0,ty); x.lineTo(W,ty); x.moveTo(0,H-ty); x.lineTo(W,H-ty); x.stroke(); x.setLineDash([]);
+}
+// vista previa saltando silencios
+(function tick(){ const m=S.media; if(m&&!m.paused&&$("#skip").checked&&S.keep.length){ const t=m.currentTime; if(!S.keep.some(([a,b])=>t>=a&&t<b-0.03)){ const nx=S.keep.find(([a])=>a>t); if(nx) m.currentTime=nx[0]; else m.pause(); } } requestAnimationFrame(tick); })();
+
+/* ---------- Exportar ---------- */
+const RATES={"23.976":[1001,24000],"24":[100,2400],"25":[100,2500],"29.97":[1001,30000],"30":[100,3000],"50":[100,5000],"59.94":[1001,60000],"60":[100,6000]};
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function frames(){ const fps=+$("#fps").value; return S.keep.map(([a,b])=>[Math.round(a*fps),Math.round(b*fps)]).filter(([a,b])=>b>a); }
+function fcpxml(){
+ const [num,den]=RATES[$("#fps").value], fps=+$("#fps").value, R=f=>`${f*num}/${den}s`;
+ const total=Math.floor(S.dur*fps); const fn=S.file.name; let p=$("#path").value.trim().replace(/^['"]|['"]$/g,"");
+ const src="file://"+(p?p.split("/").map(encodeURIComponent).join("/"):"/Users/Shared/"+encodeURIComponent(fn));
+ let off=0; const clips=frames().map(([a,b])=>{ const d=b-a; const s=`        <asset-clip ref="r2" offset="${R(off)}" name="${esc(fn)}" start="${R(a)}" duration="${R(d)}" format="r1" tcFormat="NDF"/>`; off+=d; return s; }).join("\n");
+ return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+<fcpxml version="1.9">
+  <resources>
+    <format id="r1" frameDuration="${num}/${den}s" width="${S.vw}" height="${S.vh}"/>
+    <asset id="r2" name="${esc(fn)}" start="0s" duration="${R(total)}" hasVideo="${S.hasV?1:0}" hasAudio="1" format="r1" audioSources="1" audioChannels="2" audioRate="48000">
+      <media-rep kind="original-media" src="${esc(src)}"/>
+    </asset>
+  </resources>
+  <library>
+    <event name="Cortador de Silencios">
+      <project name="${esc(S.name)} sin silencios">
+        <sequence format="r1" duration="${R(off)}" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+          <spine>
+${clips}
+          </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>
+`;
+}
+function edl(){
+ const base=Math.round(+$("#fps").value); const T=f=>{ const p=x=>String(x).padStart(2,"0"); const h=Math.floor(f/(base*3600)), m=Math.floor(f/(base*60))%60, s=Math.floor(f/base)%60, r=f%base; return `${p(h)}:${p(m)}:${p(s)}:${p(r)}`; };
+ let rec=base*3600; const lines=[`TITLE: ${S.name} sin silencios`,"FCM: NON-DROP FRAME",""];
+ frames().forEach(([a,b],i)=>{ const d=b-a; lines.push(`${String(i+1).padStart(3,"0")}  AX       AA/V  C        ${T(a)} ${T(b)} ${T(rec)} ${T(rec+d)}`,`* FROM CLIP NAME: ${S.file.name}`,""); rec+=d; });
+ return lines.join("\r\n");
+}
+
+</script>
+</body></html>
