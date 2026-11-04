@@ -168,8 +168,8 @@ async function getModel(){
  const T=await import(HF); T.env.allowLocalModels=false;
  const files={}; const cb=p=>{ if(p.status==="progress"&&p.total){ files[p.file]=[p.loaded,p.total]; let a=0,b=0; Object.values(files).forEach(([l,t])=>{a+=l;b+=t;}); prog("#pbar",a/b); } };
  const opt={dtype:"fp32",progress_callback:cb};
- try{ S.model=await T.AutoModel.from_pretrained("Xenova/modnet",{...opt,device:navigator.gpu?"webgpu":"wasm"}); }
- catch(e){ console.warn("WebGPU falló, uso CPU",e); S.model=await T.AutoModel.from_pretrained("Xenova/modnet",{...opt,device:"wasm"}); }
+ // MODNet es ligero: en CPU (wasm) es rápido y estable; WebGPU se colgaba en algunas Mac Intel
+ S.model=await T.AutoModel.from_pretrained("Xenova/modnet",{...opt,device:"wasm"});
  S.proc=await T.AutoProcessor.from_pretrained("Xenova/modnet");
 }
 async function processAll(files){
