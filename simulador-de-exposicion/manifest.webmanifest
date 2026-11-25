@@ -1,0 +1,33 @@
+{
+  "name": "Simulador de Exposición",
+  "short_name": "Simulador de Exposición",
+  "description": "ISO, apertura y velocidad en vivo, con histograma y retos.",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f2ef",
+  "theme_color": "#f3f2ef",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

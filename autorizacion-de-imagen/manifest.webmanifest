@@ -1,0 +1,33 @@
+{
+  "name": "Autorización de Imagen",
+  "short_name": "Autorización de Imagen",
+  "description": "Formato de uso de imagen y voz en PDF, por persona o en blanco.",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f2ef",
+  "theme_color": "#f3f2ef",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
