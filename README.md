@@ -4,6 +4,17 @@ Herramientas web para producción de foto, video y audio: planeación, rodaje, e
 
 **Abrir el kit:** https://adanmartinezgalvez-ui.github.io/kit-produccion/
 
+## Instalar como app
+
+El kit completo y cada herramienta se pueden instalar como app: abren en su propia ventana, con su ícono, y funcionan sin internet después de abrirlas una vez.
+
+- **Chrome (Mac o Windows):** abre el kit o la herramienta y usa el botón de instalar en la barra de direcciones, o menú ⋮ › Transmitir, guardar y compartir › Instalar página como app.
+- **Safari en Mac (macOS Sonoma o más reciente):** Archivo › Agregar al Dock.
+- **iPhone / iPad:** Compartir › Agregar a pantalla de inicio.
+- **Android:** menú ⋮ › Instalar app.
+
+Las herramientas de IA descargan su modelo la primera vez; después también funcionan sin conexión. Los cambios que se publiquen aquí aparecen solos en las apps instaladas la siguiente vez que se abran con internet.
+
 ## IA en tu navegador
 
 | Herramienta | Para qué sirve |
